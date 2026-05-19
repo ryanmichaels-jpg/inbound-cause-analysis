@@ -9,6 +9,20 @@ This doc commits the exact numerical magnitude of each aha-pattern skew that `se
 
 ---
 
+## Taxonomy: single source of truth
+
+All canonical names — theme slugs, persona strings, channel strings, content asset slugs, the outcome enum, sub-reason vocabularies, and the `manual_work_reduction` vs `data_quality` disambiguation rule — live in **one module**: `src/ica/taxonomy.py`. Every other module imports from there:
+
+- `generator/*` — uses taxonomy constants for sampling
+- `copy_bank.py` — keys snippets by `Persona × Channel × Theme` enums from taxonomy
+- `schema.py` — defers to taxonomy for any string enum values stored in the DB
+- `tests/test_aha_patterns.py` — references taxonomy enums in cell definitions
+- (Future) CP4 LLM extraction prompt — imports the disambiguation rule constant directly and inlines it into the system prompt
+
+This prevents drift between generation and extraction. When a theme is renamed, the disambiguation rule is sharpened, or a new asset slug is added, **it changes in one place** and every consumer picks up the change automatically. Tests in `test_taxonomy.py` enforce internal consistency (e.g., every asset has a theme mapping, persona/channel affinity rankings cover the full enum, persona population shares sum to 1.0).
+
+---
+
 ## Skew application order
 
 Skews compose. They are applied in this order; later skews override earlier ones for affected leads.
@@ -18,7 +32,8 @@ Skews compose. They are applied in this order; later skews override earlier ones
 3. **Apply Finding 4 skew** — rewrite outcomes in `linkedin_q2_broad_funnel` (600 leads) so that disqualified + ghosted + closed_lost-with-wrong-fit-late share ≈ 78% of campaign volume.
 4. **Apply Finding 1 skew** — scale outcomes in the `podcast` channel cohort to ~30% CW rate, and in the `linkedin_paid` channel cohort to ~3% CW rate. This is the channel-level cap; per-campaign within `linkedin_paid` floats below it (broad_funnel ~3%, enterprise ~5%, revops_targeted ~10%).
 5. **Apply Finding 2 skew** — lift CW rate in the `(persona='Mid-market RevOps Leader', seed_label_theme_primary='manual_work_reduction')` cell to ~25%.
-6. **Apply Finding 3 skew** — route ~75 of the 200 podcast leads onto the `podcast → organic_search → demo_request within 14 days` journey, and lift their CW rate to ~40%. Non-path podcast leads sit around 24% CW so that podcast's overall channel CW (Finding 1's invariant) still resolves to ~30%.
+6. **Apply Finding 3 skew** — route ~50 of the 200 podcast leads onto the `podcast → organic_search → demo_request within 14 days` journey, and lift their CW rate to ~45%. Non-path podcast leads sit around 25.3% CW so that podcast's overall channel CW (Finding 1's invariant) still resolves to ~30%.
+7. **Apply Secondary Finding (Finding 5) skew** — lift CW rate in the `(persona='Enterprise IT Buyer', seed_label_theme_primary='compliance_security')` cell to ~18%.
 
 Each skew function's docstring declares which test it satisfies (`test_aha_1_...`, etc.) and which invariants from prior skews it must preserve.
 
@@ -174,22 +189,24 @@ A lead is "on the path" iff:
 
 | Metric | Engineered | Smoke-test threshold | Margin |
 |---|---|---|---|
-| Path lead count | 75 (37.5% of 200 podcast leads) | ≥ 30 | 45 leads |
-| Path CW rate | 40% | — | — |
+| Path lead count | 50 (25% of 200 podcast leads) | ≥ 30 | 20 leads |
+| Path CW rate | 45% | — | — |
 | Overall dataset CW rate | ~7.1% | — | — |
-| Path lift (path / overall) | 5.7× | ≥ 4.0× | 1.7× |
-| Non-path podcast CW rate (invariant) | ~24% | — | composes with Finding 1's 30% podcast cap |
+| Path lift (path / overall) | 6.3× | ≥ 4.0× | 2.3× |
+| Non-path podcast CW rate (invariant) | ~25.3% | — | composes with Finding 1's 30% podcast cap |
+
+**Note on path-fraction choice:** the original sketch was 75 leads (37.5% of podcast). Dropped to 25% / 50 leads in this revision because 37.5% reads as engineered; 25% feels closer to a discovered pattern. The lift is preserved (and slightly improved, from 5.7× to 6.3×) by raising the path CW rate from 40% to 45%. The contract still clears all thresholds with margin.
 
 ### Sample size justification
 
-- Path leads: 30 wins / 75 leads. 95% CI ±√(0.40·0.60/75) ≈ ±5.7 pp → [34.3%, 45.7%].
-- Worst-case lift: 34.3 / 7.5 = **4.57×** → clears 4.0× threshold.
+- Path leads: ~22 wins / 50 leads. 95% CI ±√(0.45·0.55/50) ≈ ±6.9 pp → [38.1%, 51.9%].
+- Worst-case lift: 38.1 / 7.5 = **5.08×** → clears 4.0× threshold with margin 1.08×.
 
 ### Composition check with Finding 1
 
 - Podcast channel: 200 leads × 30% = 60 wins (Finding 1 invariant).
-- Path subset: 75 leads × 40% = 30 wins.
-- Non-path subset: 125 leads × x% = 30 wins → x = 24%.
+- Path subset: 50 leads × 45% = ~22 wins.
+- Non-path subset: 150 leads × x% = ~38 wins → x ≈ 25.3%.
 - Both rates remain plausible for a "quality channel" and the channel mean lands cleanly on 30%.
 
 ### Smoke-test assertion (verbatim)
@@ -221,9 +238,9 @@ def test_aha_3_multitouch_journey(db):
 
 ### How `seed.py` applies this skew
 
-`apply_finding_3_journey_skew(rng, leads_df, touchpoints_df, target_path_count=75, target_path_cw=0.40)`:
-- Selects ~75 podcast leads (roughly 37.5%) and synthesizes the additional touchpoints: an `organic_search` blog visit within 14 days, then a `demo_request` form_submit within 14 days. Free-text on the form submission keys to the lead's `seed_label_theme_primary` so qualitative signal flows downstream.
-- After Finding 1's podcast-channel skew is applied, this function re-balances outcomes within the path subset (lift to ~40%) and within the non-path podcast subset (settle near 24%) so the podcast channel mean remains 30%.
+`apply_finding_3_journey_skew(rng, leads_df, touchpoints_df, target_path_count=50, target_path_cw=0.45)`:
+- Selects ~50 podcast leads (roughly 25%) and synthesizes the additional touchpoints: an `organic_search` blog visit within 14 days, then a `demo_request` form_submit within 14 days. Free-text on the form submission keys to the lead's `seed_label_theme_primary` so qualitative signal flows downstream.
+- After Finding 1's podcast-channel skew is applied, this function re-balances outcomes within the path subset (lift to ~45%) and within the non-path podcast subset (settle near ~25.3%) so the podcast channel mean remains 30%.
 - Docstring: `"Satisfies test_aha_3_multitouch_journey. Composes with Finding 1: must preserve podcast channel mean CW ≈ 30%."`
 
 ---
@@ -313,25 +330,83 @@ Weighted bad-outcome share check: 0.55·(47+45+2·0.7) + 0.30·(45+38+6·0.7) + 
 
 ---
 
-## 12. Optional add — Patricia × `compliance_security` secondary cell
+## Secondary Finding — Patricia × `compliance_security`
 
-**Default: not engineered.** Per `docs/data-world.md` §10, this is an opt-in decision. Specification *if turned on:*
+> *"The system also surfaced a secondary resonance pattern: enterprise IT evaluators engage disproportionately when content addresses compliance and security requirements."*
 
-- Cell: `persona == 'Enterprise IT Buyer'` AND `seed_label_theme_primary == 'compliance_security'`.
-- Engineered target CW rate in cell: ~12% (Patricia's baseline CW is low ~4%, this is a modest 3× lift, less than Maya's signature 6×+).
-- Cell size: ~25% of Patricia's ~650 leads with compliance_security primary = ~160 leads.
-- Smoke-test assertion (would be `test_aha_5_compliance_resonance`):
-  ```python
-  PERSONA, THEME = "Enterprise IT Buyer", "compliance_security"
-  target = db.leads.where(persona=PERSONA, seed_label_theme_primary=THEME)
-  other = db.leads.where(seed_label_theme_primary=THEME).exclude(persona=PERSONA)
-  assert len(target) >= 80
-  assert closed_won_rate(target) / closed_won_rate(other) >= 2.0  # softer than Finding 2's 3.0x
-  ```
-- Would add a 5th skew function: `apply_finding_5_compliance_resonance_skew(...)`.
-- **Trade-off:** gives the CP5 dashboard a second persona×theme pattern to render and makes Patricia legible beyond her demographic role. Costs another contract to maintain and the four-finding narrative ("the four aha findings") becomes five. **Recommendation: leave off for now**, ship the four findings cleanly, mention the unengineered Patricia × compliance_security pair in the README as "the next theme to study."
+**Status: engineered.** Confirmed in this revision (was optional in the prior draft). Visually subordinated in the CP5 dashboard and CP6 README — not in the same top-row leaderboard as Findings 1–4. The two reasons to keep it: (a) it justifies why `compliance_security` was added as a 9th theme — otherwise Patricia is demographic wallpaper; (b) showing the system surfaces five findings when only four were engineered makes ICA look like it *discovers* patterns rather than was tuned for a fixed set.
 
-Confirm decision: **on** or **off**.
+### Target cells
+
+- **Resonance cell:** `persona == 'Enterprise IT Buyer'` AND `seed_label_theme_primary == 'compliance_security'`
+- **Comparison cell:** non-Patricia leads with `seed_label_theme_primary == 'compliance_security'`
+
+### Numbers
+
+| Metric | Engineered | Smoke-test threshold | Margin |
+|---|---|---|---|
+| Target cell size | ~260 leads (40% of Patricia's 650) | ≥ 100 | 160 leads |
+| Other cell size | ~120 leads (~6% of each non-Patricia persona) | ≥ 80 | 40 leads |
+| Target cell CW rate | 18% | — | — |
+| Comparison cell CW rate | ~3% | — | — |
+| Cell ratio (target / other) | 6.0× | ≥ 2.0× (softer than Finding 2's 3.0×) | 4.0× |
+
+### Sample size justification
+
+- Target cell: ~47 wins / 260 leads. 95% CI ±√(0.18·0.82/260) ≈ ±4.7 pp → [13.3%, 22.7%].
+- Comparison cell: ~3.6 wins / 120 leads. 95% CI ±√(0.03·0.97/120) ≈ ±3.1 pp → [0%, 6.1%].
+- Worst-case ratio (min target / max other): 13.3 / 6.1 = **2.18×** → clears 2.0× threshold.
+
+The thinner margin compared to Findings 1–4 reflects this finding's *secondary* status. Engineering a softer ratio threshold (2.0× vs Finding 2's 3.0×) is intentional: a secondary pattern should look believably weaker than the headline persona–theme resonance, otherwise it'd compete for attention rather than supplement.
+
+### Smoke-test assertion (verbatim)
+
+```python
+def test_aha_5_compliance_resonance(db):
+    PERSONA = "Enterprise IT Buyer"
+    THEME = "compliance_security"
+
+    target_cell = db.leads.where(
+        persona=PERSONA, seed_label_theme_primary=THEME
+    )
+    other_cell = db.leads.where(
+        seed_label_theme_primary=THEME
+    ).exclude(persona=PERSONA)
+
+    assert len(target_cell) >= 100, (
+        f"Target cell ({PERSONA}, {THEME}) size {len(target_cell)} "
+        f"must be >= 100 for stat significance"
+    )
+    assert len(other_cell) >= 80, (
+        f"Comparison cell (non-{PERSONA}, {THEME}) size {len(other_cell)} "
+        f"must be >= 80"
+    )
+
+    target_rate = closed_won_rate(target_cell)
+    other_rate = closed_won_rate(other_cell)
+
+    assert other_rate > 0, "Comparison rate must be non-zero"
+    ratio = target_rate / other_rate
+    assert ratio >= 2.0, (
+        f"Secondary resonance ratio {ratio:.2f}x must be >= 2.0x "
+        f"(target={target_rate:.3f}, other={other_rate:.3f})"
+    )
+```
+
+### How `seed.py` applies this skew
+
+`apply_finding_5_compliance_resonance_skew(rng, leads_df, persona='Enterprise IT Buyer', theme='compliance_security', target_cell_cw=0.18)`:
+- Operates after Findings 4 and 1 have set channel- and campaign-level CW caps. Operates on the (Patricia, compliance_security) cell only.
+- Probabilistically promotes non-win outcomes in the cell to `closed_won` until cell CW rate ≈ 0.18 with tolerance ±0.01.
+- Leaves the non-Patricia × compliance_security cell untouched (the ~3% rate is the natural base outcome of mostly-weak-fit personas talking about a non-signature theme).
+- Docstring: `"Satisfies test_aha_5_compliance_resonance. Cell is (Enterprise IT Buyer, compliance_security). Secondary finding — softer ratio threshold than Finding 2."`
+
+### Rendering note (for CP5 dashboard + CP6 README)
+
+- CP5 dashboard: Findings 1–4 occupy the top "Key findings" panel; Finding 5 lives below in an "Additional patterns surfaced" section. Same data visualization style but smaller card.
+- CP6 README: "The system also surfaced…" framing rather than headline status. One sentence in the executive summary; full treatment in the "What ICA found" section.
+
+---
 
 ---
 
@@ -342,18 +417,21 @@ Confirm decision: **on** or **off**.
 | 1 | podcast | 200 | 30% CW | ≥ 25% | ~5 pp |
 | 1 | linkedin_paid | 1,000 | 3% CW | ≤ 5% | ~1.5 pp |
 | 2 | Maya × mwr | ~280 | 25% CW | ≥ 3× other (≈5×) | ~0.45× |
-| 3 | podcast→blog→demo path | ~75 | 40% CW | ≥ 4× overall (≈5.7×) | ~0.57× |
+| 3 | podcast→blog→demo path | ~50 | 45% CW | ≥ 4× overall (≈6.3×) | ~1.08× |
 | 4 | linkedin_q2_broad_funnel | 600 | 78% bad / 0.685 ICP ratio | ≥ 65% / ≤ 0.75 | ~11 pp / 0.065 |
+| 5 (sec) | Patricia × compliance_security | ~260 | 18% CW | ≥ 2× other (≈6×) | ~0.18× |
 
 ---
 
-## 14. Decision points still open before generator implementation
+## 14. Locked decisions (audit trail)
 
-Before code lands, confirm:
+The four decision points raised in the prior draft are now settled:
 
-1. **Optional Patricia × compliance_security secondary cell (§12)** — on or off?
-2. **Per-persona outcome distributions inside broad_funnel (§11)** — accept the proposed numbers, or different splits between disqualified/ghosted/nurture?
-3. **"Bad outcome" definition (§ Finding 4)** — does treating `closed_lost & sub_reason='wrong_fit_late'` as a bad outcome match your intent? Alternative would be to exclude all `closed_lost` from the bad bucket (treats engaged-and-lost as legitimate engagement).
-4. **Path-fraction for Finding 3** — 75 of 200 podcast leads = 37.5% feels high. If you'd rather it feel more like a discovered pattern than an engineered one, drop to ~50 leads (25% of podcast) and engineer path CW rate to 45% to keep the lift; the wins count stays close to 22 and we'd want to tighten the smoke test sample-size threshold from 30 to 20.
+| # | Decision | Resolution |
+|---|---|---|
+| 1 | Patricia × `compliance_security` secondary cell | **ON, visually subordinated.** Promoted to "Secondary Finding" (see above), smoke test in same shape as Findings 1–4 with softer 2.0× threshold. README and CP5 dashboard treat it as "the system also surfaced…" rather than as a top-row finding. Reason: justifies the new theme, and showing the system surfaces 5 patterns when only 4 were engineered demonstrates discovery, not tuning. |
+| 2 | Per-persona outcome distributions in `linkedin_q2_broad_funnel` (§11) | **Accepted as proposed.** Carlos 1/2/47/45/5, Patricia 2/6/45/38/9, David 8/12/15/12/53, Maya 14/9/8/6/63 (won/lost/disq/ghost/nurture). Sanity-checked by user, no changes requested. |
+| 3 | `closed_lost & sub_reason='wrong_fit_late'` in Finding 4's bad bucket | **KEEP IN.** Finding 4's point is "expensive volume that wastes sales hours," and a wrong-fit lead that consumes a full sales cycle before losing is the *most* expensive form of waste. Clean `closed_lost` (competitor, price, timing, no_decision) stays out of the bad bucket. |
+| 4 | Finding 3 path-fraction | **Dropped to 25%.** 37.5% reads as engineered; 25% reads as discovered. Smoke test still clears with margin: 50 path leads × 45% CW = ~22 wins; lift over overall rate ≈ 6.3× vs threshold 4.0× (margin 2.3×). |
 
-Once these are confirmed (or no changes requested), `seed.py` skew functions and the smoke tests are implemented exactly as specified above. The smoke tests gate the implementation: skew tuning iterates until all four (or five) tests pass with margin.
+No further design gates. The next contract is `tests/test_aha_patterns.py` — `seed.py` is iterated until all 5 assertions pass with margin.
