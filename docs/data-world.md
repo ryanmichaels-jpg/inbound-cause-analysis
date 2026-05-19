@@ -98,7 +98,10 @@ Not every lead has sales_notes. Generally only leads that reached SQL/Opp (close
 | `outcome` | TEXT | enum: `closed_won`, `closed_lost`, `disqualified`, `ghosted`, `nurture` |
 | `sub_reason` | TEXT NULL | see §5 |
 | `pipeline_value_usd` | INTEGER NULL | non-null for `closed_won` and `closed_lost` |
-| `days_to_outcome` | INTEGER | days from `leads.created_at` to resolution |
+| `resolved_at` | TIMESTAMP | when the outcome was reached (lead "closed" in whatever terminal sense applies to its outcome category) |
+| `days_to_outcome` | INTEGER | derived: days from `leads.created_at` to `resolved_at`. Convenience denormalization so velocity queries don't always need a date diff. |
+
+**Note on intermediate stage transitions:** The current four findings can be answered from `leads.created_at` + `outcomes.resolved_at` + the touchpoint stream. Stage-by-stage timestamps (MQL/SQL/Opp) are not in the CP1 schema. If a downstream finding ever requires them, they can be added either as additional columns on `outcomes` or as a separate `stage_transitions` table; for now we mark stage progression implicitly through touchpoint `event_type` values (e.g., `demo_attended` ≈ SQL).
 
 ### 2.6 FK diagram
 
@@ -166,18 +169,27 @@ Fit class derived from score:
 
 ## 4. Theme taxonomy
 
-Eight themes. Each is a slug used in `ground_truth_themes` arrays and in copy-bank keying.
+Nine themes. Each is a slug used in `ground_truth_themes` arrays and in copy-bank keying.
 
 | Theme slug | Description |
 |---|---|
-| `manual_work_reduction` | Automating repetitive ops/data work; reducing manual toil |
+| `manual_work_reduction` | Reducing time spent on repetitive *process steps* that don't require data fixes (list-building, status updates, handoffs, copy-paste between systems). **The pain is *the work*.** |
+| `data_quality` | Improving the *correctness and completeness* of stored records (dedup, blank fields, stale contacts, enrichment of missing attributes). **The pain is *the data*.** |
 | `tool_sprawl_consolidation` | Reducing tool count; integrating disparate systems |
 | `pipeline_attribution` | Knowing which channels/campaigns actually drive pipeline |
 | `forecasting_accuracy` | More reliable revenue forecasts |
-| `rep_efficiency` | Making AEs/SDRs more productive |
-| `data_quality` | Clean CRM data, dedup, enrichment |
+| `rep_efficiency` | Making AEs/SDRs more productive in their selling motion (call quality, talk tracks, follow-up cadence) |
 | `cross_team_alignment` | Sales ↔ marketing/ops alignment |
 | `onboarding_ramp` | Reducing new-hire ramp time |
+| `compliance_security` | SOC2, SSO, data residency, GDPR / security review; vendor procurement requirements. **Primary Patricia theme.** |
+
+**Disambiguation rule (manual_work_reduction vs data_quality):**
+These are the closest pair and the most likely to be confused by the LLM in CP4. Copy-bank vocabulary is intentionally distinct:
+
+- `manual_work_reduction` snippets use: *"burning N hours/week," "copy-paste," "manual list-building," "rep time on admin," "ops backlog," "I do this by hand every Monday"*
+- `data_quality` snippets use: *"dupes," "blank fields," "stale contacts," "bad data," "enrichment gaps," "the CRM is a mess"*
+
+When a snippet legitimately spans both (e.g., "we spend hours every week fixing dupes"), the **primary** tag is the *goal* (`data_quality` — what they want to fix), and the **secondary** is the *symptom* (`manual_work_reduction` — the time-cost of the problem). This rule is encoded in `copy_bank.py` and reproduced in the CP4 LLM extraction prompt so the taxonomy is unambiguous on both sides.
 
 **Ground-truth tagging mechanic:**
 - Every `form_submissions.free_text_answer` and `sales_notes.text` row carries a `ground_truth_themes` JSON array.
@@ -251,8 +263,8 @@ Four personas. Population shares sum to 100%.
 - **Company archetype:** 2000+ person enterprise across various industries
 - **ICP fit class:** **Medium-Weak** (avg score ~38)
 - **Channel propensity (ranked):** linkedin_paid > comparison_page > organic_search > webinar > newsletter > podcast
-- **Theme propensity (ranked):** **tool_sprawl_consolidation** > data_quality > cross_team_alignment > forecasting_accuracy > manual_work_reduction
-- **Language tics:** procurement-flavored ("vendor evaluation," "security review," "SSO requirements"); slow; cautious
+- **Theme propensity (ranked):** **compliance_security** *(signature)* > tool_sprawl_consolidation > data_quality > cross_team_alignment > forecasting_accuracy
+- **Language tics:** procurement-flavored ("vendor evaluation," "security review," "SSO requirements," "SOC2 report," "DPA"); slow; cautious
 - **Outcome lean:** disqualifies often (wrong segment), ghosts moderately, occasionally closed_won with high pipeline value
 - **Population share:** **26%**
 
@@ -273,14 +285,26 @@ Four personas. Population shares sum to 100%.
 
 Six channels, all clearly inbound. Total = 2,500 leads.
 
-| Channel | Target leads | Baseline CW rate | Primary persona affinity | Role |
+| Channel | Target leads | Baseline CW rate | Persona affinity (strongest → weakest) | Role |
 |---|---|---|---|---|
-| `podcast` | 200 | ~30% (engineered) | Maya | Low-volume, high-quality. **Finding 1 winner.** Also vehicle for **Finding 3** journey. |
-| `linkedin_paid` | 1,000 | ~3% (engineered) | Carlos & Patricia heavy, mixed | High-volume, low-quality. **Findings 1 + 4 loser.** |
-| `organic_search` | 400 | ~8% | Maya, David, Patricia | Medium baseline |
-| `newsletter` | 300 | ~7% | Maya, David | Customer/community email newsletter |
-| `webinar` | 300 | ~6% | David, Maya | Medium baseline |
-| `comparison_page` | 300 | ~10% | Maya, David | **Replaced cold outbound.** Mid-funnel, high-intent (G2/comparison content) |
+| `podcast` | 200 | ~30% (engineered) | [Maya, David, Carlos, Patricia] | Low-volume, high-quality. **Finding 1 winner.** Also vehicle for **Finding 3** journey. |
+| `linkedin_paid` | 1,000 | ~3% (engineered) | [Carlos, Patricia, David, Maya] | High-volume, low-quality. **Findings 1 + 4 loser.** |
+| `organic_search` | 400 | ~8% | [Maya, David, Patricia, Carlos] | Medium baseline |
+| `newsletter` | 300 | ~7% | [Maya, David, Carlos, Patricia] | Customer/community email newsletter |
+| `webinar` | 300 | ~6% | [David, Maya, Patricia, Carlos] | Medium baseline |
+| `comparison_page` | 300 | ~10% | [Maya, David, Patricia, Carlos] | **Replaced cold outbound.** Mid-funnel, high-intent (G2/comparison content) |
+
+**How affinity rankings are consumed by the generator:** for each lead, the generator samples a persona first (per population shares in §6), then samples a channel conditioned on that persona's *inverse* channel-affinity (the persona's ranked channel preferences in §6). The constraint solver targets both per-channel volume (this table's "Target leads" column) and per-persona population share simultaneously. Affinity rankings are qualitative weights; exact within-channel persona proportions emerge from the joint distribution.
+
+**Within-channel campaign mix — `linkedin_paid`:**
+
+| Campaign (= `utm_campaign`) | Leads | Persona mix (within campaign) |
+|---|---|---|
+| `linkedin_q2_broad_funnel` | 600 | Carlos 40%, Patricia 35%, David 15%, Maya 10% — **deliberately more non-ICP than channel baseline** |
+| `linkedin_q2_enterprise` | 250 | Patricia 60%, David 15%, Maya 15%, Carlos 10% |
+| `linkedin_q2_revops_targeted` | 150 | Maya 55%, David 25%, Carlos 12%, Patricia 8% |
+
+The broad-funnel campaign is engineered to skew more non-ICP than the linkedin_paid channel as a whole. This is where Finding 4's tension lives — the highest-volume single campaign produces predominantly wrong-fit leads despite costing the most. The exact non-ICP outcome percentage in this campaign is committed in Gate 2.
 
 UTM mapping per channel:
 
@@ -299,7 +323,7 @@ UTM mapping per channel:
 
 ## 8. Content asset library
 
-15 named assets across 6 channels.
+16 named assets across 6 channels.
 
 ### Podcast episodes — channel = `podcast`
 
@@ -318,6 +342,7 @@ UTM mapping per channel:
 | `blog-attribution-honest` | Honest Attribution: What B2B Marketers Get Wrong | `pipeline_attribution` | Maya, David |
 | `blog-forecast-models` | Forecast Models That Don't Lie | `forecasting_accuracy` | David |
 | `blog-crm-cleanup` | The Quarterly CRM Cleanup Playbook | `data_quality` | Maya |
+| `blog-compliance-vendor-checklist` | The Enterprise GTM Vendor Compliance Checklist | `compliance_security` | Patricia |
 
 ### LinkedIn ad campaigns — channel = `linkedin_paid`
 
@@ -371,3 +396,5 @@ The exact numerical magnitude of each aha-pattern skew:
 | 4 — ICP fit vs volume mismatch | Exact non-ICP % inside `linkedin_q2_broad_funnel`; mean ICP fit score in that bucket |
 
 Plus the smoke-test assertion text (verbatim) for each.
+
+**Optional Gate 2 add — Patricia × `compliance_security` secondary cell:** the `compliance_security` theme is defined in §4 and Patricia carries it as her signature in §6, but the cell is *not* artificially lifted by default. Engineering a modest secondary resonance differential here (e.g., ~2x lift, less than Maya's signature 3x) would give the CP5 dashboard a second pattern to render and makes Patricia legible beyond demographic role. **Default: not engineered.** Decide in Gate 2 — opt in adds a fifth assertion to the smoke-test suite; opt out keeps the four-finding contract clean.
