@@ -300,7 +300,7 @@ Six channels, all clearly inbound. Total = 2,500 leads.
 
 | Campaign (= `utm_campaign`) | Leads | Persona mix (within campaign) |
 |---|---|---|
-| `linkedin_q2_broad_funnel` | 600 | Carlos 40%, Patricia 35%, David 15%, Maya 10% — **deliberately more non-ICP than channel baseline** |
+| `linkedin_q2_broad_funnel` | 600 | Carlos 55%, Patricia 30%, David 10%, Maya 5% — **deliberately more non-ICP than channel baseline** (tightened from initial 40/35/15/10 sketch so the Finding 4 ICP-ratio assertion clears its threshold with margin; see `docs/aha-patterns.md`) |
 | `linkedin_q2_enterprise` | 250 | Patricia 60%, David 15%, Maya 15%, Carlos 10% |
 | `linkedin_q2_revops_targeted` | 150 | Maya 55%, David 25%, Carlos 12%, Patricia 8% |
 
