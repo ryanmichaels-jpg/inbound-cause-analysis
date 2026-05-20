@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS leads (
     icp_fit_score               INTEGER NOT NULL,
     created_via_channel         TEXT NOT NULL,
     seed_label_theme_primary    TEXT NOT NULL,
-    seed_label_theme_secondary  TEXT
+    seed_label_theme_secondary  TEXT,
+    first_touch_utm_campaign    TEXT
 );
 """
 
@@ -146,6 +147,7 @@ class Lead:
     created_via_channel: Channel
     seed_label_theme_primary: Theme
     seed_label_theme_secondary: Theme | None = None
+    first_touch_utm_campaign: str | None = None
 
 
 @dataclass
@@ -176,10 +178,12 @@ class PartialLead:
     company_revenue_band: str
     persona: Persona
     icp_fit_score: int
-    # Deferred — created_at and created_via_channel set by channels.py;
-    # seed_label_theme_* set by journeys.py.
+    # Deferred — created_at, created_via_channel, and (linkedin_paid only)
+    # first_touch_utm_campaign set by channels.py; seed_label_theme_* set
+    # by journeys.py.
     created_at: datetime | None = None
     created_via_channel: Channel | None = None
+    first_touch_utm_campaign: str | None = None
     seed_label_theme_primary: Theme | None = None
     seed_label_theme_secondary: Theme | None = None
 
@@ -187,8 +191,10 @@ class PartialLead:
         """Finalize into a Lead.
 
         Raises ValueError if a required deferred field is still unset.
-        seed_label_theme_secondary stays optional — it is legitimately
-        None for the ~70% of leads with no secondary theme.
+        seed_label_theme_secondary stays optional — legitimately None for
+        the ~70% of leads with no secondary theme. first_touch_utm_campaign
+        is required only for linkedin_paid leads; it is None for every
+        other channel.
         """
         missing = [
             name
@@ -202,6 +208,14 @@ class PartialLead:
         if missing:
             raise ValueError(
                 f"PartialLead {self.lead_id} cannot finalize — unset fields: {missing}"
+            )
+        if (
+            self.created_via_channel == Channel.LINKEDIN_PAID
+            and self.first_touch_utm_campaign is None
+        ):
+            raise ValueError(
+                f"PartialLead {self.lead_id} is linkedin_paid but "
+                f"first_touch_utm_campaign is unset"
             )
         return Lead(
             lead_id=self.lead_id,
@@ -221,6 +235,7 @@ class PartialLead:
             created_via_channel=self.created_via_channel,
             seed_label_theme_primary=self.seed_label_theme_primary,
             seed_label_theme_secondary=self.seed_label_theme_secondary,
+            first_touch_utm_campaign=self.first_touch_utm_campaign,
         )
 
 
@@ -301,7 +316,7 @@ def _row_tuple(obj: Any) -> tuple:
 
 def insert_lead(conn: sqlite3.Connection, lead: Lead) -> None:
     conn.execute(
-        "INSERT INTO leads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO leads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         _row_tuple(lead),
     )
 

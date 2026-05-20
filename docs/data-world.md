@@ -44,6 +44,7 @@ Five tables. No reference tables yet — enum-like values (persona, channel, the
 | `created_via_channel` | TEXT | first-touch channel; denormalized convenience |
 | `seed_label_theme_primary` | TEXT | the theme this lead's journey was generated to express |
 | `seed_label_theme_secondary` | TEXT NULL | optional secondary theme (~30% of leads) |
+| `first_touch_utm_campaign` | TEXT NULL | first-touch campaign; denormalized convenience (like `created_via_channel`), non-null only for `linkedin_paid` leads |
 
 ### 2.2 `touchpoints`
 

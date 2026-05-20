@@ -227,6 +227,58 @@ def test_partial_lead_to_lead_raises_when_deferred_field_missing():
         pl.to_lead()
 
 
+def test_partial_lead_to_lead_requires_campaign_for_linkedin_paid():
+    pl = PartialLead(
+        lead_id="lead-li",
+        person_first_name="Dana",
+        person_last_name="Park",
+        person_email="dana.park@bigco.com",
+        person_title="VP of Sales",
+        person_seniority=Seniority.VP,
+        company_name="BigCo",
+        company_domain="bigco.com",
+        company_industry="SaaS",
+        company_employee_count=300,
+        company_revenue_band="$20-100M",
+        persona=Persona.DAVID,
+        icp_fit_score=70,
+    )
+    pl.created_at = datetime(2026, 4, 1, 9, 0, 0)
+    pl.created_via_channel = Channel.LINKEDIN_PAID
+    pl.seed_label_theme_primary = Theme.REP_EFFICIENCY
+    # first_touch_utm_campaign still None — invalid for a linkedin_paid lead
+    with pytest.raises(ValueError):
+        pl.to_lead()
+    # once set, finalizes and the value carries through
+    pl.first_touch_utm_campaign = "linkedin_q2_broad_funnel"
+    lead = pl.to_lead()
+    assert lead.first_touch_utm_campaign == "linkedin_q2_broad_funnel"
+
+
+def test_partial_lead_to_lead_allows_null_campaign_off_linkedin():
+    pl = PartialLead(
+        lead_id="lead-pod",
+        person_first_name="Maya",
+        person_last_name="Chen",
+        person_email="maya.chen@acme-saas.com",
+        person_title="Director of RevOps",
+        person_seniority=Seniority.DIRECTOR,
+        company_name="Acme SaaS",
+        company_domain="acme-saas.com",
+        company_industry="SaaS",
+        company_employee_count=275,
+        company_revenue_band="$20-100M",
+        persona=Persona.MAYA,
+        icp_fit_score=76,
+    )
+    pl.created_at = datetime(2026, 3, 1, 10, 0, 0)
+    pl.created_via_channel = Channel.PODCAST
+    pl.seed_label_theme_primary = Theme.MANUAL_WORK_REDUCTION
+    # first_touch_utm_campaign stays None — valid for a non-linkedin lead
+    lead = pl.to_lead()
+    assert lead.first_touch_utm_campaign is None
+
+
 # -----------------------------------------------------------------------------
 # Foreign keys actually enforced
 # -----------------------------------------------------------------------------
