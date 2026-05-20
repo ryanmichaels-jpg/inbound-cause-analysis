@@ -148,6 +148,10 @@ _PERSONA_INDEX = {persona: i for i, persona in enumerate(Persona)}
 # methodical enterprise evaluators — so comparison_page is the most natural
 # home for that residual. The five volumes sum to 1,500 == the post-linkedin
 # persona budget, so the fill is exact by construction.
+# The Patricia-heavy / David-light comparison_page residual is expected
+# greedy-fill behavior — reviewed and ACCEPTED AS-IS. Do not "correct" it
+# toward strict 4/3/2/1 affinity in a later refactor; no Finding constrains
+# this mix and the residual is a realistic natural-distortion observation.
 _STEP_B_CHANNEL_ORDER = (
     Channel.PODCAST,
     Channel.ORGANIC_SEARCH,

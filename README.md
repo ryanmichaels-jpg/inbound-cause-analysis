@@ -17,3 +17,7 @@ make test        # runs schema and aha-pattern smoke tests
 - `PROJECT.md` — scope, architecture, six-checkpoint build sequence.
 - `docs/data-world.md` — Gate 1: schema, personas, channels, content library, theme taxonomy.
 - `docs/aha-patterns.md` — Gate 2: statistical contracts for the five aha findings (four headline + one secondary).
+
+## Known followups
+
+- `test_personas.py` — dedicated unit-level coverage for the persona generator. `personas.py` is currently verified at sample level and exercised indirectly through downstream module tests (`test_channels.py`, and later journeys/outcomes); a dedicated suite is a parity gap with `taxonomy`, `schema`, and `channels`.
