@@ -112,3 +112,158 @@ envelope spreads podcast created_at across the window so enough qualify.
 Output: list[PartialLead] with created_via_channel, created_at, and
 first_touch_utm_campaign (linkedin only) populated; themes still None.
 """
+
+from datetime import date, datetime, timedelta
+
+import numpy as np
+
+from ica.schema import PartialLead
+from ica.taxonomy import (
+    CHANNEL_PERSONA_AFFINITY,
+    CHANNEL_TARGET_VOLUME,
+    DEFAULT_SEED,
+    LINKEDIN_CAMPAIGN_PERSONA_MIX,
+    LINKEDIN_CAMPAIGN_VOLUME,
+    LINKEDIN_CAMPAIGNS,
+    TIME_WINDOW_END,
+    TIME_WINDOW_START,
+    TOTAL_LEADS_DEFAULT,
+    Channel,
+    Persona,
+)
+
+__all__ = ["assign_channels"]
+
+# Affinity rank (strongest -> weakest) -> Step B sampling weight.
+_RANK_WEIGHT = (4, 3, 2, 1)
+
+# Persona enum order — the deterministic tiebreak for largest-remainder.
+_PERSONA_INDEX = {persona: i for i, persona in enumerate(Persona)}
+
+# Step B fill order. podcast first: it is the narrative-critical high-quality
+# channel and should get a clean strong-fit draw on full persona budgets.
+# comparison_page last: pure affinity-weighted greedy leaves a structurally
+# Patricia-heavy residual (Patricia is low-affinity on every channel, so she
+# accumulates), and G2 / comparison-page traffic plausibly skews toward
+# methodical enterprise evaluators — so comparison_page is the most natural
+# home for that residual. The five volumes sum to 1,500 == the post-linkedin
+# persona budget, so the fill is exact by construction.
+_STEP_B_CHANNEL_ORDER = (
+    Channel.PODCAST,
+    Channel.ORGANIC_SEARCH,
+    Channel.NEWSLETTER,
+    Channel.WEBINAR,
+    Channel.COMPARISON_PAGE,
+)
+
+# channel -> {persona -> affinity weight}, precomputed for the Step B channels.
+_AFFINITY_WEIGHT: dict[Channel, dict[Persona, int]] = {
+    channel: {
+        persona: _RANK_WEIGHT[CHANNEL_PERSONA_AFFINITY[channel].index(persona)]
+        for persona in Persona
+    }
+    for channel in _STEP_B_CHANNEL_ORDER
+}
+
+# data-world.md §1 created_at envelope.
+_MOM_GROWTH = 1.05
+_WEEKEND_WEIGHT = 0.5
+
+
+def _campaign_persona_counts(volume: int, mix: dict[Persona, float]) -> dict[Persona, int]:
+    """Exact integer per-persona counts for a linkedin campaign of `volume`
+    leads allocated by `mix`.
+
+    Largest-remainder in integer (percent) arithmetic, so floating-point dust
+    can never flip a .5 tie; ties are broken by Persona enum order. The mix
+    fractions are whole-percent values, so the * 100 scaling is exact.
+    """
+    percent = {persona: round(mix[persona] * 100) for persona in mix}
+    numerator = {persona: volume * percent[persona] for persona in percent}
+    counts = {persona: numerator[persona] // 100 for persona in percent}
+    deficit = volume - sum(counts.values())
+    ranked = sorted(
+        percent,
+        key=lambda persona: (-(numerator[persona] % 100), _PERSONA_INDEX[persona]),
+    )
+    for persona in ranked[:deficit]:
+        counts[persona] += 1
+    return counts
+
+
+def _created_at_series(rng: np.random.Generator, n: int) -> list[datetime]:
+    """`n` first-touch timestamps sampled from the data-world §1 envelope:
+    +5% month-over-month growth * weekday-heavier weekly seasonality."""
+    start = date.fromisoformat(TIME_WINDOW_START)
+    end = date.fromisoformat(TIME_WINDOW_END)
+    days = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+    weights = np.array(
+        [
+            _MOM_GROWTH ** ((d.year - start.year) * 12 + d.month - start.month)
+            * (_WEEKEND_WEIGHT if d.weekday() >= 5 else 1.0)
+            for d in days
+        ],
+        dtype=float,
+    )
+    weights /= weights.sum()
+    day_index = rng.choice(len(days), size=n, p=weights)
+    seconds = rng.integers(0, 86_400, size=n)
+    out: list[datetime] = []
+    for day_i, sec in zip(day_index, seconds, strict=True):
+        day = days[int(day_i)]
+        out.append(datetime(day.year, day.month, day.day) + timedelta(seconds=int(sec)))
+    return out
+
+
+def assign_channels(
+    leads: list[PartialLead],
+    seed: int = DEFAULT_SEED,
+) -> list[PartialLead]:
+    """Fill created_via_channel, created_at, and (linkedin_paid only)
+    first_touch_utm_campaign on each PartialLead. See the module docstring
+    for the locked inputs and the three-step approach.
+
+    Mutates the PartialLeads in place and returns the same list.
+    """
+    if len(leads) != TOTAL_LEADS_DEFAULT:
+        raise ValueError(
+            f"assign_channels expects the {TOTAL_LEADS_DEFAULT}-lead world; "
+            f"got {len(leads)}"
+        )
+    rng = np.random.default_rng(seed)
+
+    pools: dict[Persona, list[PartialLead]] = {persona: [] for persona in Persona}
+    for lead in leads:
+        pools[lead.persona].append(lead)
+    cursor = {persona: 0 for persona in Persona}
+
+    # Step A — linkedin_paid: locked campaign volumes and persona mixes.
+    for campaign in LINKEDIN_CAMPAIGNS:
+        counts = _campaign_persona_counts(
+            LINKEDIN_CAMPAIGN_VOLUME[campaign],
+            LINKEDIN_CAMPAIGN_PERSONA_MIX[campaign],
+        )
+        for persona, count in counts.items():
+            for _ in range(count):
+                lead = pools[persona][cursor[persona]]
+                cursor[persona] += 1
+                lead.created_via_channel = Channel.LINKEDIN_PAID
+                lead.first_touch_utm_campaign = campaign
+
+    # Step B — the other five channels: greedy affinity-weighted fill.
+    for channel in _STEP_B_CHANNEL_ORDER:
+        weight_of = _AFFINITY_WEIGHT[channel]
+        for _ in range(CHANNEL_TARGET_VOLUME[channel]):
+            available = [p for p in Persona if cursor[p] < len(pools[p])]
+            weights = np.array([weight_of[p] for p in available], dtype=float)
+            weights /= weights.sum()
+            persona = available[int(rng.choice(len(available), p=weights))]
+            lead = pools[persona][cursor[persona]]
+            cursor[persona] += 1
+            lead.created_via_channel = channel
+
+    # Step C — created_at for every lead, from the §1 envelope.
+    for lead, timestamp in zip(leads, _created_at_series(rng, len(leads)), strict=True):
+        lead.created_at = timestamp
+
+    return leads
