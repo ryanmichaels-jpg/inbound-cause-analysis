@@ -34,6 +34,8 @@ from ica.taxonomy import (
     PERSONA_THEME_AFFINITY,
     PERSONA_TITLES,
     PODCAST_EPISODES,
+    THEME_ANCHOR_VOCAB,
+    THEME_BRIDGE_PAIRS,
     TOTAL_LEADS_DEFAULT,
     WEBINARS,
     Channel,
@@ -303,3 +305,42 @@ def test_linkedin_paid_is_lowest_baseline_cw():
     """Finding 1 assumes linkedin_paid is the low-quality channel."""
     bottom = min(CHANNEL_BASELINE_CW_RATE, key=CHANNEL_BASELINE_CW_RATE.get)
     assert bottom == Channel.LINKEDIN_PAID
+
+
+# -----------------------------------------------------------------------------
+# Theme anchor vocabulary and bridge pairs
+# -----------------------------------------------------------------------------
+
+
+def test_theme_anchor_vocab_covers_all_themes():
+    assert set(THEME_ANCHOR_VOCAB.keys()) == set(Theme)
+
+
+def test_theme_anchors_nonempty_lowercase_unique():
+    for theme, anchors in THEME_ANCHOR_VOCAB.items():
+        assert anchors, theme
+        assert len(anchors) == len(set(anchors)), theme
+        for anchor in anchors:
+            assert anchor == anchor.lower(), anchor
+            assert anchor.strip(), theme
+
+
+def test_theme_anchors_disjoint_across_themes():
+    """An anchor belongs to exactly one theme — else it is ambient, not an
+    anchor, and would break copy_bank's lexical-separation enforcement."""
+    seen: dict[str, Theme] = {}
+    for theme, anchors in THEME_ANCHOR_VOCAB.items():
+        for anchor in anchors:
+            assert anchor not in seen, (
+                f"anchor {anchor!r} appears for both {seen[anchor]} and {theme}"
+            )
+            seen[anchor] = theme
+
+
+def test_theme_bridge_pairs_distinct_and_unique():
+    seen: set[tuple[Theme, Theme]] = set()
+    for primary, secondary in THEME_BRIDGE_PAIRS:
+        assert primary != secondary, (primary, secondary)
+        assert (primary, secondary) not in seen
+        assert (secondary, primary) not in seen, f"reverse-duplicate {primary}/{secondary}"
+        seen.add((primary, secondary))

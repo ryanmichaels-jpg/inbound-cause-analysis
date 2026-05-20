@@ -595,3 +595,80 @@ INDUSTRIES: tuple[str, ...] = (
     "Consumer",
     "Other",
 )
+
+# =============================================================================
+# Section 14 — Theme anchor vocabulary and bridge pairs
+# Imported by generator/copy_bank.py (snippet generation + the lexical-
+# separation test) and, in CP4, by the LLM extraction prompt.
+# =============================================================================
+
+# Per-theme anchor vocabulary: lowercase substring tokens that name a theme's
+# specific pain object or action. An anchor is distinctive — it would read as
+# out of place in another theme's snippet. Ambient GTM vocabulary (pipeline,
+# team, process, deal, quota, growth) is deliberately excluded: it appears
+# across every theme and carries no separating signal. For the closest pair,
+# manual_work_reduction vs data_quality, the split is dictated by §4 of
+# data-world.md — mwr anchors name manual ACTIONS, data_quality anchors name
+# data DEFECTS. copy_bank.py enforces, per snippet: a pure single-theme
+# snippet contains >=1 of its own anchors and zero foreign anchors; a bridge
+# snippet contains >=1 anchor from each of its two themes.
+THEME_ANCHOR_VOCAB: dict[Theme, tuple[str, ...]] = {
+    Theme.MANUAL_WORK_REDUCTION: (
+        "copy-paste", "copy and paste", "by hand", "manual",
+        "list-building", "ops backlog", "admin",
+    ),
+    Theme.DATA_QUALITY: (
+        "dupes", "duplicate", "blank field", "stale contact",
+        "bad data", "dirty data", "enrichment gap", "crm is a mess",
+    ),
+    Theme.TOOL_SPRAWL_CONSOLIDATION: (
+        "tool sprawl", "too many tools", "point solution", "stitch",
+        "consolidat", "disparate system",
+    ),
+    Theme.PIPELINE_ATTRIBUTION: (
+        "attribution", "which channels", "which campaigns",
+        "first-touch", "last-touch", "drives pipeline",
+    ),
+    Theme.FORECASTING_ACCURACY: (
+        "forecast", "sandbag", "pipeline coverage", "commit number",
+        "call the quarter", "slipped deal",
+    ),
+    Theme.REP_EFFICIENCY: (
+        "talk track", "call quality", "follow-up cadence",
+        "selling time", "call coaching", "rep productivity",
+    ),
+    Theme.CROSS_TEAM_ALIGNMENT: (
+        "align", "sales and marketing", "marketing and sales",
+        "handoff", "hand-off", "silo", "finger-point",
+    ),
+    Theme.ONBOARDING_RAMP: (
+        "ramp", "new hire", "new rep", "onboarding",
+        "up to speed", "time to first deal",
+    ),
+    Theme.COMPLIANCE_SECURITY: (
+        "soc2", "soc 2", "sso", "security review", "data residency",
+        "gdpr", "dpa", "vendor evaluation", "procurement",
+    ),
+}
+
+# Thematic-adjacency bridge pairs — the only theme pairs a bridge snippet
+# (~30% of the copy bank) may span. Each pair is ordered (primary, secondary):
+# primary = the goal / what the lead wants to fix, secondary = the symptom or
+# cause. This is §4's mwr/data_quality direction rule, generalized.
+THEME_BRIDGE_PAIRS: tuple[tuple[Theme, Theme], ...] = (
+    # data-world.md §4 — DICTATED. "We burn hours every week fixing dupes."
+    (Theme.DATA_QUALITY, Theme.MANUAL_WORK_REDUCTION),
+    # §4 names this example. Manual admin load eats reps' selling time.
+    (Theme.REP_EFFICIENCY, Theme.MANUAL_WORK_REDUCTION),
+    # §8 pairs these on the comparison page. Attribution is guesswork when
+    # the data is split across too many tools.
+    (Theme.PIPELINE_ATTRIBUTION, Theme.TOOL_SPRAWL_CONSOLIDATION),
+    # §6 — Patricia's top two themes. Every new point tool is another
+    # vendor security review.
+    (Theme.COMPLIANCE_SECURITY, Theme.TOOL_SPRAWL_CONSOLIDATION),
+    # §6 — Carlos's top two themes. New hires ramp slowly when the talk
+    # tracks are not documented.
+    (Theme.ONBOARDING_RAMP, Theme.REP_EFFICIENCY),
+    # Sales and marketing dispute attribution credit every QBR.
+    (Theme.CROSS_TEAM_ALIGNMENT, Theme.PIPELINE_ATTRIBUTION),
+)
