@@ -686,58 +686,74 @@ THEME_BRIDGE_PAIRS: tuple[tuple[Theme, Theme], ...] = (
 #   Maya x manual_work_reduction   = 0.40  aha-patterns.md F2 (0.40*700 = 280)
 #   Patricia x compliance_security = 0.40  aha-patterns.md F5 (0.40*650 = 260)
 #   non-Patricia x compliance_security = 0.06 each  aha-patterns.md F5
-#       ("~6% of each non-Patricia persona"). The F2 comparison cell also
-#       constrains non-Maya x manual_work_reduction to sum-weight ~207.
+#       ("~6% of each non-Patricia persona"); and non-Maya x
+#       manual_work_reduction (David 0.16 / Carlos 0.18 / Patricia 0.02)
+#       sum-weights to the F2 comparison cell (~209).
 #
-# PROPOSED cells — v1 design choice: within each persona the shares are
-# monotonic with the §6 PERSONA_THEME_AFFINITY ranking (signature theme
-# highest, rank-5 lowest, off-affinity themes a small tail below rank-5).
-# Exception: compliance_security is pinned at the F5-dictated 0.06 for the
-# three non-Patricia personas, so it sits at tail level regardless of
-# affinity. This keeps each persona's theme mix recognizable.
+# Each persona has exactly 6 nonzero themes: its 5 §6-affinity themes plus
+# one DICTATED cross-theme (compliance for non-Patricia, mwr for Patricia);
+# the other 3 are 0.0. An earlier draft gave every persona all 9 themes
+# with small off-affinity tails. Those 12 PROPOSED tail cells were zeroed
+# when journeys.py implementation showed copy_bank only carries form-answer
+# cells for each persona's affinity-5 + the DICTATED cross-themes — keeping
+# the tails would have produced primary-theme assignments copy_bank cannot
+# serve. The 12 zeroed (persona, theme) cells:
+#   Maya:     rep_efficiency, cross_team_alignment, onboarding_ramp
+#   David:    data_quality, tool_sprawl_consolidation, onboarding_ramp
+#   Patricia: pipeline_attribution, rep_efficiency, onboarding_ramp
+#   Carlos:   tool_sprawl_consolidation, forecasting_accuracy, cross_team_alignment
+# The 4 DICTATED cross-theme cells (Maya/David/Carlos x compliance_security,
+# Patricia x manual_work_reduction) were preserved and gained copy_bank
+# form-answer coverage in the same gate. Zeroed share was redistributed
+# only into each persona's non-frozen affinity themes, so every engineered
+# cell (F2 280/209, F5 260/111) is unchanged.
+#
+# PROPOSED cells — v1 design choice: nonzero shares are monotonic with the
+# §6 PERSONA_THEME_AFFINITY ranking; the DICTATED cross-theme sits at the
+# tail. This keeps each persona's theme mix recognizable.
 PERSONA_THEME_SHARE: dict[Persona, dict[Theme, float]] = {
     Persona.MAYA: {
         Theme.MANUAL_WORK_REDUCTION: 0.40,
-        Theme.PIPELINE_ATTRIBUTION: 0.18,
-        Theme.DATA_QUALITY: 0.14,
-        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.10,
-        Theme.FORECASTING_ACCURACY: 0.07,
+        Theme.PIPELINE_ATTRIBUTION: 0.20,
+        Theme.DATA_QUALITY: 0.15,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.11,
+        Theme.FORECASTING_ACCURACY: 0.08,
         Theme.COMPLIANCE_SECURITY: 0.06,
-        Theme.REP_EFFICIENCY: 0.02,
-        Theme.CROSS_TEAM_ALIGNMENT: 0.02,
-        Theme.ONBOARDING_RAMP: 0.01,
+        Theme.REP_EFFICIENCY: 0.00,
+        Theme.CROSS_TEAM_ALIGNMENT: 0.00,
+        Theme.ONBOARDING_RAMP: 0.00,
     },
     Persona.DAVID: {
-        Theme.REP_EFFICIENCY: 0.28,
-        Theme.FORECASTING_ACCURACY: 0.22,
-        Theme.PIPELINE_ATTRIBUTION: 0.18,
+        Theme.REP_EFFICIENCY: 0.30,
+        Theme.FORECASTING_ACCURACY: 0.23,
+        Theme.PIPELINE_ATTRIBUTION: 0.19,
         Theme.MANUAL_WORK_REDUCTION: 0.16,
         Theme.CROSS_TEAM_ALIGNMENT: 0.06,
         Theme.COMPLIANCE_SECURITY: 0.06,
-        Theme.DATA_QUALITY: 0.02,
-        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.01,
-        Theme.ONBOARDING_RAMP: 0.01,
+        Theme.DATA_QUALITY: 0.00,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.00,
+        Theme.ONBOARDING_RAMP: 0.00,
     },
     Persona.PATRICIA: {
         Theme.COMPLIANCE_SECURITY: 0.40,
-        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.20,
-        Theme.DATA_QUALITY: 0.15,
-        Theme.CROSS_TEAM_ALIGNMENT: 0.10,
-        Theme.FORECASTING_ACCURACY: 0.07,
-        Theme.PIPELINE_ATTRIBUTION: 0.03,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.22,
+        Theme.DATA_QUALITY: 0.17,
+        Theme.CROSS_TEAM_ALIGNMENT: 0.11,
+        Theme.FORECASTING_ACCURACY: 0.08,
         Theme.MANUAL_WORK_REDUCTION: 0.02,
-        Theme.REP_EFFICIENCY: 0.02,
-        Theme.ONBOARDING_RAMP: 0.01,
+        Theme.PIPELINE_ATTRIBUTION: 0.00,
+        Theme.REP_EFFICIENCY: 0.00,
+        Theme.ONBOARDING_RAMP: 0.00,
     },
     Persona.CARLOS: {
-        Theme.ONBOARDING_RAMP: 0.30,
-        Theme.REP_EFFICIENCY: 0.24,
+        Theme.ONBOARDING_RAMP: 0.32,
+        Theme.REP_EFFICIENCY: 0.26,
         Theme.MANUAL_WORK_REDUCTION: 0.18,
-        Theme.PIPELINE_ATTRIBUTION: 0.10,
+        Theme.PIPELINE_ATTRIBUTION: 0.11,
         Theme.DATA_QUALITY: 0.07,
         Theme.COMPLIANCE_SECURITY: 0.06,
-        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.02,
-        Theme.FORECASTING_ACCURACY: 0.02,
-        Theme.CROSS_TEAM_ALIGNMENT: 0.01,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.00,
+        Theme.FORECASTING_ACCURACY: 0.00,
+        Theme.CROSS_TEAM_ALIGNMENT: 0.00,
     },
 }
