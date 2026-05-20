@@ -326,6 +326,40 @@ PERSONA_SENIORITY_WEIGHTS: dict[Persona, dict[Seniority, float]] = {
     },
 }
 
+# Persona-conditional job titles (data-world.md §2.1). Sampled in
+# generator/personas.py from the persona's pool. A distinct vocabulary
+# per persona is part of what makes a raw lead row readable.
+PERSONA_TITLES: dict[Persona, tuple[str, ...]] = {
+    Persona.MAYA: (
+        "Director of RevOps",
+        "Senior RevOps Manager",
+        "RevOps Lead",
+        "Head of Revenue Operations",
+        "VP of Revenue Operations",
+    ),
+    Persona.DAVID: (
+        "VP of Sales",
+        "Head of Sales",
+        "Director of Sales",
+        "Chief Revenue Officer",
+        "SVP, Sales",
+    ),
+    Persona.PATRICIA: (
+        "Director of IT",
+        "VP of Information Technology",
+        "IT Procurement Manager",
+        "Head of IT Security & Compliance",
+        "Senior Manager, IT Operations",
+    ),
+    Persona.CARLOS: (
+        "Founder",
+        "Co-Founder",
+        "Founder & CEO",
+        "CEO",
+        "Co-Founder & CTO",
+    ),
+}
+
 # =============================================================================
 # Section 8 — Population shares and volume targets
 # =============================================================================

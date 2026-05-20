@@ -32,6 +32,7 @@ from ica.taxonomy import (
     PERSONA_POPULATION_SHARE,
     PERSONA_SENIORITY_WEIGHTS,
     PERSONA_THEME_AFFINITY,
+    PERSONA_TITLES,
     PODCAST_EPISODES,
     TOTAL_LEADS_DEFAULT,
     WEBINARS,
@@ -127,6 +128,36 @@ def test_persona_company_size_range_is_valid(persona: Persona):
     lo, hi = PERSONA_COMPANY_SIZE_RANGE[persona]
     assert lo > 0
     assert hi > lo
+
+
+# -----------------------------------------------------------------------------
+# Persona titles
+# -----------------------------------------------------------------------------
+
+
+def test_persona_titles_cover_all_personas():
+    assert set(PERSONA_TITLES.keys()) == set(Persona)
+
+
+@pytest.mark.parametrize("persona", list(Persona))
+def test_persona_titles_at_least_three(persona: Persona):
+    assert len(PERSONA_TITLES[persona]) >= 3
+
+
+@pytest.mark.parametrize("persona", list(Persona))
+def test_persona_titles_unique_within_pool(persona: Persona):
+    titles = PERSONA_TITLES[persona]
+    assert len(titles) == len(set(titles))
+
+
+def test_persona_titles_no_cross_pool_overlap():
+    seen: dict[str, Persona] = {}
+    for persona, titles in PERSONA_TITLES.items():
+        for title in titles:
+            assert title not in seen, (
+                f"title {title!r} appears in both {seen[title]} and {persona}"
+            )
+            seen[title] = persona
 
 
 # -----------------------------------------------------------------------------
