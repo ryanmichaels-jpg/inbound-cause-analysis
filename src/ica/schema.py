@@ -283,10 +283,10 @@ _ICP_INDUSTRY_HIGH_FIT = frozenset({"SaaS", "Fintech", "Martech"})
 _ICP_INDUSTRY_NEUTRAL = frozenset({"E-commerce", "Healthcare"})
 
 _ICP_PERSONA_BONUS: dict[Persona, int] = {
-    Persona.MAYA: 10,
-    Persona.DAVID: 8,
-    Persona.PATRICIA: -5,
-    Persona.CARLOS: -10,
+    Persona.MAYA: 5,
+    Persona.DAVID: 2,
+    Persona.PATRICIA: -2,
+    Persona.CARLOS: -8,
 }
 
 
@@ -305,9 +305,9 @@ def compute_icp_fit_score(
 
     # Company size
     if 150 <= employee_count <= 500:
-        score += 20
+        score += 8
     elif 50 <= employee_count < 150:
-        score += 5
+        score += 4
     elif 500 < employee_count <= 1500:
         score += 0
     elif employee_count < 50:
@@ -317,7 +317,7 @@ def compute_icp_fit_score(
 
     # Industry
     if industry in _ICP_INDUSTRY_HIGH_FIT:
-        score += 10
+        score += 7
     elif industry in _ICP_INDUSTRY_NEUTRAL:
         score += 0
     else:
@@ -325,9 +325,9 @@ def compute_icp_fit_score(
 
     # Seniority
     if seniority in (Seniority.DIRECTOR, Seniority.VP):
-        score += 10
+        score += 7
     elif seniority == Seniority.SR_MANAGER:
-        score += 5
+        score += 3
     elif seniority == Seniority.C_LEVEL:
         score -= 5
     elif seniority == Seniority.IC:

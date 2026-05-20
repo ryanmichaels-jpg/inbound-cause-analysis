@@ -124,29 +124,29 @@ leads (lead_id) ──┬──< touchpoints (lead_id)
 base = 50
 
 # Company size match (target: 150-500 employees, growth-stage SaaS)
-if 150 <= employee_count <= 500:    score += 20
-elif 50 <= employee_count < 150:    score += 5
+if 150 <= employee_count <= 500:    score += 8
+elif 50 <= employee_count < 150:    score += 4
 elif 500 < employee_count <= 1500:  score += 0
 elif employee_count < 50:           score -= 15
 elif employee_count > 1500:         score -= 10
 
 # Industry fit
-if industry in {'SaaS', 'Fintech', 'Martech'}:        score += 10
+if industry in {'SaaS', 'Fintech', 'Martech'}:        score += 7
 elif industry in {'E-commerce', 'Healthcare'}:        score += 0
 else:                                                 score -= 10  # Manufacturing/Consumer/Other
 
 # Seniority fit (target buyer: Director / VP)
-if seniority in {'Director', 'VP'}:  score += 10
-elif seniority == 'Sr Manager':       score += 5
+if seniority in {'Director', 'VP'}:  score += 7
+elif seniority == 'Sr Manager':       score += 3
 elif seniority == 'C-level':          score -= 5
 elif seniority == 'IC':               score -= 10
 
 # Persona adjustment (encodes "this persona archetype is our buyer")
 persona_bonus = {
-  'Mid-market RevOps Leader': +10,
-  'VP Sales at growth-stage SaaS': +8,
-  'Enterprise IT Buyer': -5,
-  'SMB Founder': -10,
+  'Mid-market RevOps Leader': +5,
+  'VP Sales at growth-stage SaaS': +2,
+  'Enterprise IT Buyer': -2,
+  'SMB Founder': -8,
 }[persona]
 score += persona_bonus
 

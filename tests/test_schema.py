@@ -210,28 +210,28 @@ def _rng_zero_noise() -> np.random.Generator:
 
 
 def test_icp_fit_strong_fit_maya():
-    """Maya (Director) at a 300-person SaaS = +20 +10 +10 +10 + 50 = 100, clamped."""
+    """Maya (Director) at a 300-person SaaS = 50 +8 +7 +7 +5 = 77."""
     score = compute_icp_fit_score(
         Persona.MAYA, "SaaS", 300, Seniority.DIRECTOR, _rng_zero_noise()
     )
-    assert score == 100
+    assert score == 77
 
 
 def test_icp_fit_weak_fit_carlos():
     """Carlos (C-level founder) at a 12-person SaaS startup.
 
-    base 50 - 15 (size) + 10 (industry SaaS) - 5 (C-level) - 10 (persona) = 30
+    base 50 - 15 (size) + 7 (industry SaaS) - 5 (C-level) - 8 (persona) = 29
     """
     score = compute_icp_fit_score(
         Persona.CARLOS, "SaaS", 12, Seniority.C_LEVEL, _rng_zero_noise()
     )
-    assert score == 30
+    assert score == 29
 
 
 def test_icp_fit_enterprise_patricia_director():
     """Patricia at a 5000-person Manufacturing co.
 
-    base 50 - 10 (oversized) - 10 (off-industry) + 10 (Director) - 5 (persona) = 35
+    base 50 - 10 (oversized) - 10 (off-industry) + 7 (Director) - 2 (persona) = 35
     """
     score = compute_icp_fit_score(
         Persona.PATRICIA, "Manufacturing", 5000, Seniority.DIRECTOR, _rng_zero_noise()
@@ -239,20 +239,34 @@ def test_icp_fit_enterprise_patricia_director():
     assert score == 35
 
 
-def test_icp_fit_clamped_at_zero():
-    """A maximally-bad lead should clamp at 0, not negative."""
-    # very-small, off-industry, IC, weak persona
+def test_icp_fit_worst_deterministic_lead_above_floor():
+    """Deterministic worst-case attributes still score above 0.
+
+    Lowest score reachable without noise: Carlos (weak persona),
+    off-industry, sub-50 headcount, IC seniority.
+    base 50 - 15 (size) - 10 (industry) - 10 (IC) - 8 (persona) = 7
+    """
     score = compute_icp_fit_score(
         Persona.CARLOS, "Consumer", 5, Seniority.IC, _rng_zero_noise()
     )
-    # 50 -15 -10 -10 -10 = 5
-    assert score == 5
-    # Push it further negative with persona/seniority to verify clamp:
+    assert score == 7
     score2 = compute_icp_fit_score(
         Persona.CARLOS, "Manufacturing", 3, Seniority.IC, _rng_zero_noise()
     )
-    # 50 -15 -10 -10 -10 = 5 (same as above; manual upper bound)
-    assert score2 >= 0
+    assert score2 == 7
+
+
+def test_icp_fit_clamped_at_zero():
+    """An extreme negative noise draw floors the score at 0, not below."""
+
+    class _ExtremeNegativeRNG:
+        def normal(self, loc, scale):
+            return -999.0
+
+    score = compute_icp_fit_score(
+        Persona.CARLOS, "Consumer", 5, Seniority.IC, _ExtremeNegativeRNG()  # type: ignore[arg-type]
+    )
+    assert score == 0
 
 
 def test_icp_fit_deterministic_with_same_seed():
