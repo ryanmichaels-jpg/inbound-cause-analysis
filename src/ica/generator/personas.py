@@ -75,3 +75,146 @@ Non-obvious rules to flag for review:
 Output: list[PartialLead], persona + identity + firmographics populated,
 ready for channels.py and journeys.py to enrich.
 """
+
+import re
+import uuid
+from typing import TypeVar
+
+import numpy as np
+from faker import Faker
+
+from ica.schema import (
+    PartialLead,
+    compute_icp_fit_score,
+    revenue_band_for_employee_count,
+)
+from ica.taxonomy import (
+    DEFAULT_SEED,
+    PERSONA_COMPANY_SIZE_RANGE,
+    PERSONA_INDUSTRY_WEIGHTS,
+    PERSONA_POPULATION_SHARE,
+    PERSONA_SENIORITY_WEIGHTS,
+    PERSONA_TITLES,
+    TOTAL_LEADS_DEFAULT,
+    Persona,
+)
+
+__all__ = ["sample_personas"]
+
+# Fixed namespace so lead_id is reproducible across runs and machines.
+_LEAD_ID_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "ica.inbound-cause-analysis")
+
+# Company-name -> domain slug helpers.
+_DOMAIN_PUNCT = re.compile(r"[^a-z0-9\s-]")
+_DOMAIN_SUFFIX = re.compile(r"\b(inc|llc|ltd|plc|group)\b")
+_DOMAIN_SPACES = re.compile(r"\s+")
+_DOMAIN_DASHES = re.compile(r"-+")
+_EMAIL_PUNCT = re.compile(r"[^a-z0-9]")
+
+_K = TypeVar("_K")
+
+
+def _persona_counts(total_leads: int) -> dict[Persona, int]:
+    """Deterministic per-persona counts; any rounding remainder goes to Maya."""
+    counts = {p: round(total_leads * PERSONA_POPULATION_SHARE[p]) for p in Persona}
+    counts[Persona.MAYA] += total_leads - sum(counts.values())
+    return counts
+
+
+def _sample_categorical(rng: np.random.Generator, weights: dict[_K, float]) -> _K:
+    """Pick one key from a {key: weight} mapping. Weights normalized defensively."""
+    keys = list(weights.keys())
+    probs = np.array([weights[k] for k in keys], dtype=float)
+    probs /= probs.sum()
+    return keys[int(rng.choice(len(keys), p=probs))]
+
+
+def _sample_employee_count(rng: np.random.Generator, lo: int, hi: int) -> int:
+    """Log-normal-ish headcount centered on the geometric mean of [lo, hi],
+    clipped to the range."""
+    log_lo, log_hi = np.log(lo), np.log(hi)
+    mu = (log_lo + log_hi) / 2.0
+    sigma = (log_hi - log_lo) / 4.0  # range spans ~+/-2 sigma before clipping
+    value = int(round(float(np.exp(rng.normal(mu, sigma)))))
+    return int(np.clip(value, lo, hi))
+
+
+def _company_domain(company_name: str) -> str:
+    """Slugify a Faker company name into a `<slug>.com` domain."""
+    slug = company_name.lower()
+    slug = _DOMAIN_PUNCT.sub("", slug)
+    slug = _DOMAIN_SUFFIX.sub("", slug)
+    slug = _DOMAIN_SPACES.sub("-", slug.strip())
+    slug = _DOMAIN_DASHES.sub("-", slug).strip("-")
+    return f"{slug or 'company'}.com"
+
+
+def _person_email(first: str, last: str, domain: str) -> str:
+    first_slug = _EMAIL_PUNCT.sub("", first.lower())
+    last_slug = _EMAIL_PUNCT.sub("", last.lower())
+    return f"{first_slug}.{last_slug}@{domain}"
+
+
+def _sample_one(
+    persona: Persona,
+    index: int,
+    seed: int,
+    rng: np.random.Generator,
+    fake: Faker,
+) -> PartialLead:
+    seniority = _sample_categorical(rng, PERSONA_SENIORITY_WEIGHTS[persona])
+    titles = PERSONA_TITLES[persona]
+    title = titles[int(rng.integers(len(titles)))]
+    industry = _sample_categorical(rng, PERSONA_INDUSTRY_WEIGHTS[persona])
+    lo, hi = PERSONA_COMPANY_SIZE_RANGE[persona]
+    employee_count = _sample_employee_count(rng, lo, hi)
+    revenue_band = revenue_band_for_employee_count(employee_count)
+
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    company_name = fake.company()
+    domain = _company_domain(company_name)
+    email = _person_email(first_name, last_name, domain)
+
+    icp = compute_icp_fit_score(persona, industry, employee_count, seniority, rng)
+    lead_id = str(uuid.uuid5(_LEAD_ID_NAMESPACE, f"{seed}:{index}"))
+
+    return PartialLead(
+        lead_id=lead_id,
+        person_first_name=first_name,
+        person_last_name=last_name,
+        person_email=email,
+        person_title=title,
+        person_seniority=seniority,
+        company_name=company_name,
+        company_domain=domain,
+        company_industry=industry,
+        company_employee_count=employee_count,
+        company_revenue_band=revenue_band,
+        persona=persona,
+        icp_fit_score=icp,
+    )
+
+
+def sample_personas(
+    seed: int = DEFAULT_SEED,
+    total_leads: int = TOTAL_LEADS_DEFAULT,
+) -> list[PartialLead]:
+    """Stratified-sample `total_leads` PartialLead records across the four
+    personas, honoring taxonomy.PERSONA_POPULATION_SHARE.
+
+    created_at, created_via_channel, and seed_label_theme_* are left unset
+    for channels.py and journeys.py to fill.
+    """
+    rng = np.random.default_rng(seed)
+    Faker.seed(seed)
+    fake = Faker()
+
+    counts = _persona_counts(total_leads)
+    leads: list[PartialLead] = []
+    index = 0
+    for persona in Persona:
+        for _ in range(counts[persona]):
+            leads.append(_sample_one(persona, index, seed, rng, fake))
+            index += 1
+    return leads
