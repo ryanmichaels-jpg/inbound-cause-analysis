@@ -149,6 +149,82 @@ class Lead:
 
 
 @dataclass
+class PartialLead:
+    """A Lead before channel/journey enrichment.
+
+    generator/personas.py produces these: persona, identity, and
+    firmographics are populated; the channel- and journey-assigned
+    fields are left None until channels.py and journeys.py fill them.
+    `to_lead()` is the finalizer — it asserts the deferred fields have
+    been set and returns a fully-populated Lead. A typed PartialLead is
+    used over a dict (which loses type introspection across the
+    enrichment stages) and over a Lead with sentinel values (a forgotten
+    overwrite would silently persist a placeholder into a NOT NULL
+    column instead of failing loudly here).
+    """
+
+    lead_id: str
+    person_first_name: str
+    person_last_name: str
+    person_email: str
+    person_title: str
+    person_seniority: Seniority
+    company_name: str
+    company_domain: str
+    company_industry: str
+    company_employee_count: int
+    company_revenue_band: str
+    persona: Persona
+    icp_fit_score: int
+    # Deferred — created_at and created_via_channel set by channels.py;
+    # seed_label_theme_* set by journeys.py.
+    created_at: datetime | None = None
+    created_via_channel: Channel | None = None
+    seed_label_theme_primary: Theme | None = None
+    seed_label_theme_secondary: Theme | None = None
+
+    def to_lead(self) -> "Lead":
+        """Finalize into a Lead.
+
+        Raises ValueError if a required deferred field is still unset.
+        seed_label_theme_secondary stays optional — it is legitimately
+        None for the ~70% of leads with no secondary theme.
+        """
+        missing = [
+            name
+            for name in (
+                "created_at",
+                "created_via_channel",
+                "seed_label_theme_primary",
+            )
+            if getattr(self, name) is None
+        ]
+        if missing:
+            raise ValueError(
+                f"PartialLead {self.lead_id} cannot finalize — unset fields: {missing}"
+            )
+        return Lead(
+            lead_id=self.lead_id,
+            created_at=self.created_at,
+            person_first_name=self.person_first_name,
+            person_last_name=self.person_last_name,
+            person_email=self.person_email,
+            person_title=self.person_title,
+            person_seniority=self.person_seniority,
+            company_name=self.company_name,
+            company_domain=self.company_domain,
+            company_industry=self.company_industry,
+            company_employee_count=self.company_employee_count,
+            company_revenue_band=self.company_revenue_band,
+            persona=self.persona,
+            icp_fit_score=self.icp_fit_score,
+            created_via_channel=self.created_via_channel,
+            seed_label_theme_primary=self.seed_label_theme_primary,
+            seed_label_theme_secondary=self.seed_label_theme_secondary,
+        )
+
+
+@dataclass
 class Touchpoint:
     touchpoint_id: str
     lead_id: str
@@ -382,6 +458,7 @@ __all__ = [
     "FormSubmission",
     "Lead",
     "OutcomeRow",
+    "PartialLead",
     "SalesNote",
     "Touchpoint",
     "asdict",  # re-export convenience

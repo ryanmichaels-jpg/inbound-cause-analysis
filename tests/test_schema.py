@@ -12,6 +12,7 @@ from ica.schema import (
     FormSubmission,
     Lead,
     OutcomeRow,
+    PartialLead,
     SalesNote,
     Touchpoint,
     compute_icp_fit_score,
@@ -172,6 +173,58 @@ def test_insert_outcome_roundtrip():
         "SELECT outcome, pipeline_value_usd, days_to_outcome FROM outcomes"
     ).fetchone()
     assert row == ("closed_won", 80_000, 45)
+
+
+# -----------------------------------------------------------------------------
+# PartialLead -> Lead finalizer
+# -----------------------------------------------------------------------------
+
+
+def test_partial_lead_to_lead_completes_a_full_record():
+    pl = PartialLead(
+        lead_id="lead-001",
+        person_first_name="Maya",
+        person_last_name="Chen",
+        person_email="maya.chen@acme-saas.com",
+        person_title="Director of RevOps",
+        person_seniority=Seniority.DIRECTOR,
+        company_name="Acme SaaS",
+        company_domain="acme-saas.com",
+        company_industry="SaaS",
+        company_employee_count=275,
+        company_revenue_band="$20-100M",
+        persona=Persona.MAYA,
+        icp_fit_score=76,
+    )
+    pl.created_at = datetime(2026, 3, 1, 10, 0, 0)
+    pl.created_via_channel = Channel.PODCAST
+    pl.seed_label_theme_primary = Theme.MANUAL_WORK_REDUCTION
+    lead = pl.to_lead()
+    assert isinstance(lead, Lead)
+    assert lead.lead_id == "lead-001"
+    assert lead.created_via_channel == Channel.PODCAST
+    assert lead.seed_label_theme_secondary is None
+
+
+def test_partial_lead_to_lead_raises_when_deferred_field_missing():
+    pl = PartialLead(
+        lead_id="lead-002",
+        person_first_name="Carlos",
+        person_last_name="Reyes",
+        person_email="carlos.reyes@tinyco.com",
+        person_title="Founder",
+        person_seniority=Seniority.C_LEVEL,
+        company_name="TinyCo",
+        company_domain="tinyco.com",
+        company_industry="SaaS",
+        company_employee_count=12,
+        company_revenue_band="<$5M",
+        persona=Persona.CARLOS,
+        icp_fit_score=29,
+    )
+    # created_at / created_via_channel / seed_label_theme_primary still None
+    with pytest.raises(ValueError):
+        pl.to_lead()
 
 
 # -----------------------------------------------------------------------------
