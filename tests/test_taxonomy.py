@@ -32,6 +32,7 @@ from ica.taxonomy import (
     PERSONA_POPULATION_SHARE,
     PERSONA_SENIORITY_WEIGHTS,
     PERSONA_THEME_AFFINITY,
+    PERSONA_THEME_SHARE,
     PERSONA_TITLES,
     PODCAST_EPISODES,
     THEME_ANCHOR_VOCAB,
@@ -344,3 +345,52 @@ def test_theme_bridge_pairs_distinct_and_unique():
         assert (primary, secondary) not in seen
         assert (secondary, primary) not in seen, f"reverse-duplicate {primary}/{secondary}"
         seen.add((primary, secondary))
+
+
+# -----------------------------------------------------------------------------
+# Per-persona seed-theme share distribution
+# -----------------------------------------------------------------------------
+
+
+def test_persona_theme_share_covers_all_personas():
+    assert set(PERSONA_THEME_SHARE.keys()) == set(Persona)
+
+
+@pytest.mark.parametrize("persona", list(Persona))
+def test_persona_theme_share_covers_all_themes(persona: Persona):
+    assert set(PERSONA_THEME_SHARE[persona].keys()) == set(Theme)
+
+
+@pytest.mark.parametrize("persona", list(Persona))
+def test_persona_theme_share_sums_to_one(persona: Persona):
+    assert _approx_one(sum(PERSONA_THEME_SHARE[persona].values()))
+
+
+def test_persona_theme_share_engineered_cells_hit_targets():
+    """F2 and F5 cell sizes — locked here to catch silent drift before
+    test_aha_patterns.py. Each cell is round(share * persona population)."""
+    pop = {
+        p: round(TOTAL_LEADS_DEFAULT * PERSONA_POPULATION_SHARE[p])
+        for p in Persona
+    }
+    share = PERSONA_THEME_SHARE
+    maya_mwr = round(
+        pop[Persona.MAYA] * share[Persona.MAYA][Theme.MANUAL_WORK_REDUCTION]
+    )
+    patricia_compliance = round(
+        pop[Persona.PATRICIA] * share[Persona.PATRICIA][Theme.COMPLIANCE_SECURITY]
+    )
+    non_maya_mwr = sum(
+        round(pop[p] * share[p][Theme.MANUAL_WORK_REDUCTION])
+        for p in Persona
+        if p is not Persona.MAYA
+    )
+    non_patricia_compliance = sum(
+        round(pop[p] * share[p][Theme.COMPLIANCE_SECURITY])
+        for p in Persona
+        if p is not Persona.PATRICIA
+    )
+    assert maya_mwr == 280  # F2 target cell
+    assert patricia_compliance == 260  # F5 target cell
+    assert non_maya_mwr == 209  # F2 comparison cell (aha-patterns threshold >= 100)
+    assert non_patricia_compliance == 111  # F5 comparison cell (threshold >= 80)

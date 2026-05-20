@@ -672,3 +672,72 @@ THEME_BRIDGE_PAIRS: tuple[tuple[Theme, Theme], ...] = (
     # Sales and marketing dispute attribution credit every QBR.
     (Theme.CROSS_TEAM_ALIGNMENT, Theme.PIPELINE_ATTRIBUTION),
 )
+
+# =============================================================================
+# Section 15 — Per-persona seed-theme share distribution
+# Consumed by generator/journeys.py to assign seed_label_theme_primary by
+# stratified sampling (exact round(share * persona population) per cell).
+# =============================================================================
+
+# Probability that a lead of each persona gets a given primary theme. Rows
+# sum to 1.0 (enforced by tests/test_taxonomy.py).
+#
+# DICTATED cells — do not rebalance without reopening Gate 2:
+#   Maya x manual_work_reduction   = 0.40  aha-patterns.md F2 (0.40*700 = 280)
+#   Patricia x compliance_security = 0.40  aha-patterns.md F5 (0.40*650 = 260)
+#   non-Patricia x compliance_security = 0.06 each  aha-patterns.md F5
+#       ("~6% of each non-Patricia persona"). The F2 comparison cell also
+#       constrains non-Maya x manual_work_reduction to sum-weight ~207.
+#
+# PROPOSED cells — v1 design choice: within each persona the shares are
+# monotonic with the §6 PERSONA_THEME_AFFINITY ranking (signature theme
+# highest, rank-5 lowest, off-affinity themes a small tail below rank-5).
+# Exception: compliance_security is pinned at the F5-dictated 0.06 for the
+# three non-Patricia personas, so it sits at tail level regardless of
+# affinity. This keeps each persona's theme mix recognizable.
+PERSONA_THEME_SHARE: dict[Persona, dict[Theme, float]] = {
+    Persona.MAYA: {
+        Theme.MANUAL_WORK_REDUCTION: 0.40,
+        Theme.PIPELINE_ATTRIBUTION: 0.18,
+        Theme.DATA_QUALITY: 0.14,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.10,
+        Theme.FORECASTING_ACCURACY: 0.07,
+        Theme.COMPLIANCE_SECURITY: 0.06,
+        Theme.REP_EFFICIENCY: 0.02,
+        Theme.CROSS_TEAM_ALIGNMENT: 0.02,
+        Theme.ONBOARDING_RAMP: 0.01,
+    },
+    Persona.DAVID: {
+        Theme.REP_EFFICIENCY: 0.28,
+        Theme.FORECASTING_ACCURACY: 0.22,
+        Theme.PIPELINE_ATTRIBUTION: 0.18,
+        Theme.MANUAL_WORK_REDUCTION: 0.16,
+        Theme.CROSS_TEAM_ALIGNMENT: 0.06,
+        Theme.COMPLIANCE_SECURITY: 0.06,
+        Theme.DATA_QUALITY: 0.02,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.01,
+        Theme.ONBOARDING_RAMP: 0.01,
+    },
+    Persona.PATRICIA: {
+        Theme.COMPLIANCE_SECURITY: 0.40,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.20,
+        Theme.DATA_QUALITY: 0.15,
+        Theme.CROSS_TEAM_ALIGNMENT: 0.10,
+        Theme.FORECASTING_ACCURACY: 0.07,
+        Theme.PIPELINE_ATTRIBUTION: 0.03,
+        Theme.MANUAL_WORK_REDUCTION: 0.02,
+        Theme.REP_EFFICIENCY: 0.02,
+        Theme.ONBOARDING_RAMP: 0.01,
+    },
+    Persona.CARLOS: {
+        Theme.ONBOARDING_RAMP: 0.30,
+        Theme.REP_EFFICIENCY: 0.24,
+        Theme.MANUAL_WORK_REDUCTION: 0.18,
+        Theme.PIPELINE_ATTRIBUTION: 0.10,
+        Theme.DATA_QUALITY: 0.07,
+        Theme.COMPLIANCE_SECURITY: 0.06,
+        Theme.TOOL_SPRAWL_CONSOLIDATION: 0.02,
+        Theme.FORECASTING_ACCURACY: 0.02,
+        Theme.CROSS_TEAM_ALIGNMENT: 0.01,
+    },
+}
