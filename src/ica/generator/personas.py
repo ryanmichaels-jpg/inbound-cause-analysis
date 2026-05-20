@@ -41,7 +41,8 @@ Fields assigned in THIS module:
   hyphens, trailing ", inc/llc" stripped).
 - person_email: derived — first.last @ company_domain.
 - person_seniority: categorical from PERSONA_SENIORITY_WEIGHTS[p].
-- person_title: sampled from taxonomy.PERSONA_TITLES[p].
+- person_title: sampled from taxonomy.PERSONA_TITLES[p][seniority] — the
+  sub-pool scoped to the seniority drawn for this lead.
 - company_employee_count: integer in PERSONA_COMPANY_SIZE_RANGE[p],
   drawn from a log-normal-ish distribution clipped to the range.
 - company_industry: categorical from PERSONA_INDUSTRY_WEIGHTS[p].
@@ -64,12 +65,12 @@ Non-obvious rules to flag for review:
    separate from numpy's Generator. Faker doesn't accept a numpy
    Generator; the two RNGs are kept in lock-step by passing the same
    integer seed.
-2. person_title and person_seniority are sampled independently from
-   their per-persona pools — NOT cross-constrained. A lead can pair
-   e.g. seniority='VP' with a Director-flavored title. Accepted for v1
-   (both are persona flavor; pools are written so any title reads
-   plausibly for that persona). Flagged in case seniority-keyed title
-   sub-pools are wanted instead.
+2. person_seniority is drawn first; person_title is then sampled from
+   PERSONA_TITLES[persona][seniority] — the sub-pool scoped to that
+   seniority — so the two are always tier-consistent (no 'VP seniority
+   with a Manager-level title' rows). PERSONA_TITLES is keyed by exactly
+   the seniorities each persona samples, so seniority is always a valid
+   sub-pool key; the draw order (seniority before title) is required.
 3. person_email collisions are not de-duplicated; irrelevant in v1.
 
 Output: list[PartialLead], persona + identity + firmographics populated,
@@ -163,8 +164,8 @@ def _sample_one(
     fake: Faker,
 ) -> PartialLead:
     seniority = _sample_categorical(rng, PERSONA_SENIORITY_WEIGHTS[persona])
-    titles = PERSONA_TITLES[persona]
-    title = titles[int(rng.integers(len(titles)))]
+    subpool = PERSONA_TITLES[persona][seniority]
+    title = subpool[int(rng.integers(len(subpool)))]
     industry = _sample_categorical(rng, PERSONA_INDUSTRY_WEIGHTS[persona])
     lo, hi = PERSONA_COMPANY_SIZE_RANGE[persona]
     employee_count = _sample_employee_count(rng, lo, hi)

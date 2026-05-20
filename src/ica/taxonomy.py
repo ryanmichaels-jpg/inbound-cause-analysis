@@ -326,38 +326,92 @@ PERSONA_SENIORITY_WEIGHTS: dict[Persona, dict[Seniority, float]] = {
     },
 }
 
-# Persona-conditional job titles (data-world.md §2.1). Sampled in
-# generator/personas.py from the persona's pool. A distinct vocabulary
-# per persona is part of what makes a raw lead row readable.
-PERSONA_TITLES: dict[Persona, tuple[str, ...]] = {
-    Persona.MAYA: (
-        "Director of RevOps",
-        "Senior RevOps Manager",
-        "RevOps Lead",
-        "Head of Revenue Operations",
-        "VP of Revenue Operations",
-    ),
-    Persona.DAVID: (
-        "VP of Sales",
-        "Head of Sales",
-        "Director of Sales",
-        "Chief Revenue Officer",
-        "SVP, Sales",
-    ),
-    Persona.PATRICIA: (
-        "Director of IT",
-        "VP of Information Technology",
-        "IT Procurement Manager",
-        "Head of IT Security & Compliance",
-        "Senior Manager, IT Operations",
-    ),
-    Persona.CARLOS: (
-        "Founder",
-        "Co-Founder",
-        "Founder & CEO",
-        "CEO",
-        "Co-Founder & CTO",
-    ),
+# Persona- and seniority-conditional job titles (data-world.md §2.1),
+# keyed by seniority. generator/personas.py draws seniority first, then
+# samples a title from that persona's sub-pool for that seniority, so
+# person_title and person_seniority are always tier-consistent. Keys
+# match exactly the seniorities each persona samples in
+# PERSONA_SENIORITY_WEIGHTS. A distinct vocabulary per persona is part of
+# what makes a raw lead row readable.
+#
+# Sub-pools hold >=2 titles, not >=3: the Carlos VP and Director
+# sub-pools are narrow founder-at-non-C-level edge cases (~90 and ~30
+# leads), and forcing a third title there means inventing implausible
+# titles — the realism cost outweighs the variety gain. Do not "fix"
+# this up to >=3 in a later refactor.
+PERSONA_TITLES: dict[Persona, dict[Seniority, tuple[str, ...]]] = {
+    Persona.MAYA: {
+        Seniority.DIRECTOR: (
+            "Director of RevOps",
+            "Director of Revenue Operations",
+            "RevOps Director",
+        ),
+        Seniority.SR_MANAGER: (
+            "Senior RevOps Manager",
+            "Senior Manager, Revenue Operations",
+            "RevOps Lead",
+        ),
+        Seniority.VP: (
+            "VP of Revenue Operations",
+            "Head of Revenue Operations",
+            "VP of RevOps",
+        ),
+    },
+    Persona.DAVID: {
+        Seniority.VP: (
+            "VP of Sales",
+            "Head of Sales",
+            "Regional VP of Sales",
+        ),
+        Seniority.DIRECTOR: (
+            "Director of Sales",
+            "Sales Director",
+            "Director of Field Sales",
+        ),
+        Seniority.C_LEVEL: (
+            "Chief Revenue Officer",
+            "Chief Sales Officer",
+            "Chief Commercial Officer",
+        ),
+    },
+    Persona.PATRICIA: {
+        Seniority.DIRECTOR: (
+            "Director of IT",
+            "IT Director",
+            "Director of Information Technology",
+        ),
+        Seniority.VP: (
+            "VP of Information Technology",
+            "Head of IT",
+            "VP of IT Infrastructure",
+        ),
+        Seniority.SR_MANAGER: (
+            "Senior Manager, IT Operations",
+            "Senior IT Procurement Manager",
+            "Senior Manager, IT Security & Compliance",
+        ),
+        Seniority.MANAGER: (
+            "IT Procurement Manager",
+            "IT Operations Manager",
+            "IT Security & Compliance Manager",
+        ),
+    },
+    Persona.CARLOS: {
+        Seniority.C_LEVEL: (
+            "Founder & CEO",
+            "CEO",
+            "Co-Founder & CEO",
+            "Founder",
+        ),
+        Seniority.VP: (
+            "Co-Founder",
+            "VP of Operations",
+        ),
+        Seniority.DIRECTOR: (
+            "Founding Team Member",
+            "Director of Operations",
+        ),
+    },
 }
 
 # =============================================================================

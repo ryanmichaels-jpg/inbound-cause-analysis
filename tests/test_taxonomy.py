@@ -140,24 +140,42 @@ def test_persona_titles_cover_all_personas():
 
 
 @pytest.mark.parametrize("persona", list(Persona))
-def test_persona_titles_at_least_three(persona: Persona):
-    assert len(PERSONA_TITLES[persona]) >= 3
+def test_persona_title_subpools_match_sampled_seniorities(persona: Persona):
+    """Every sampled seniority has a title sub-pool, and no sub-pool exists
+    for a seniority the persona never samples. This is what makes the
+    two-step (seniority -> title) draw in personas.py KeyError-safe."""
+    assert set(PERSONA_TITLES[persona].keys()) == set(
+        PERSONA_SENIORITY_WEIGHTS[persona].keys()
+    )
 
 
 @pytest.mark.parametrize("persona", list(Persona))
-def test_persona_titles_unique_within_pool(persona: Persona):
-    titles = PERSONA_TITLES[persona]
-    assert len(titles) == len(set(titles))
+def test_persona_titles_at_least_two_per_subpool(persona: Persona):
+    for seniority, titles in PERSONA_TITLES[persona].items():
+        assert len(titles) >= 2, f"{persona}/{seniority} has {len(titles)} titles"
 
 
-def test_persona_titles_no_cross_pool_overlap():
+@pytest.mark.parametrize("persona", list(Persona))
+def test_persona_titles_at_least_three_per_persona(persona: Persona):
+    total = sum(len(titles) for titles in PERSONA_TITLES[persona].values())
+    assert total >= 3
+
+
+@pytest.mark.parametrize("persona", list(Persona))
+def test_persona_titles_unique_within_persona(persona: Persona):
+    flat = [t for pool in PERSONA_TITLES[persona].values() for t in pool]
+    assert len(flat) == len(set(flat))
+
+
+def test_persona_titles_no_cross_persona_overlap():
     seen: dict[str, Persona] = {}
-    for persona, titles in PERSONA_TITLES.items():
-        for title in titles:
-            assert title not in seen, (
-                f"title {title!r} appears in both {seen[title]} and {persona}"
-            )
-            seen[title] = persona
+    for persona, subpools in PERSONA_TITLES.items():
+        for titles in subpools.values():
+            for title in titles:
+                assert title not in seen, (
+                    f"title {title!r} appears for both {seen[title]} and {persona}"
+                )
+                seen[title] = persona
 
 
 # -----------------------------------------------------------------------------

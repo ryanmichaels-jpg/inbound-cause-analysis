@@ -32,7 +32,7 @@ Five tables. No reference tables yet — enum-like values (persona, channel, the
 | `person_first_name` | TEXT | Faker-generated |
 | `person_last_name` | TEXT | Faker-generated |
 | `person_email` | TEXT | derived: first.last@company_domain |
-| `person_title` | TEXT | persona-conditional (e.g., "Director of RevOps") |
+| `person_title` | TEXT | persona- and seniority-conditional (e.g., "Director of RevOps") |
 | `person_seniority` | TEXT | enum: `IC`, `Manager`, `Sr Manager`, `Director`, `VP`, `C-level` |
 | `company_name` | TEXT | Faker company name |
 | `company_domain` | TEXT | derived from company_name |
