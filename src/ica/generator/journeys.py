@@ -148,3 +148,263 @@ Output: list[PartialLead] with seed_label_theme_primary/secondary set
 (every lead now finalizable via to_lead()), plus the touchpoints and
 form_submissions row collections.
 """
+
+import uuid
+from datetime import date, datetime, timedelta
+
+import numpy as np
+
+from ica.generator.content_library import assets_by_channel, assets_for
+from ica.generator.copy_bank import form_answer, form_question
+from ica.schema import FormSubmission, PartialLead, Touchpoint
+from ica.taxonomy import (
+    DEFAULT_SEED,
+    F3_PATH_WITHIN_DAYS,
+    F3_TARGET_PATH_COUNT,
+    PERSONA_THEME_SHARE,
+    TIME_WINDOW_END,
+    Channel,
+    EventType,
+    FormType,
+    Persona,
+    Theme,
+)
+
+__all__ = ["build_journeys"]
+
+_TOUCHPOINT_NS = uuid.uuid5(uuid.NAMESPACE_DNS, "ica.touchpoint")
+_SUBMISSION_NS = uuid.uuid5(uuid.NAMESPACE_DNS, "ica.form-submission")
+
+_THEME_INDEX = {theme: i for i, theme in enumerate(Theme)}
+
+# First-touch event_type per channel.
+_FIRST_TOUCH_EVENT: dict[Channel, EventType] = {
+    Channel.PODCAST: EventType.PODCAST_LISTEN,
+    Channel.LINKEDIN_PAID: EventType.PAGE_VIEW,
+    Channel.ORGANIC_SEARCH: EventType.PAGE_VIEW,
+    Channel.NEWSLETTER: EventType.EMAIL_CLICK,
+    Channel.WEBINAR: EventType.WEBINAR_REGISTER,
+    Channel.COMPARISON_PAGE: EventType.PAGE_VIEW,
+}
+
+# utm_source / utm_medium per channel (data-world.md §7); set on the
+# first-touch touchpoint only.
+_CHANNEL_UTM: dict[Channel, tuple[str, str]] = {
+    Channel.PODCAST: ("podcast", "audio"),
+    Channel.LINKEDIN_PAID: ("linkedin", "cpc"),
+    Channel.ORGANIC_SEARCH: ("google", "organic"),
+    Channel.NEWSLETTER: ("newsletter", "email"),
+    Channel.WEBINAR: ("webinar", "event"),
+    Channel.COMPARISON_PAGE: ("g2", "referral"),
+}
+
+# Non-F3 lead-creating form types and weights. F3 leads are forced to
+# demo_request (the path needs a demo_request touchpoint).
+_FORM_TYPES: tuple[FormType, ...] = (
+    FormType.CONTENT_DOWNLOAD,
+    FormType.DEMO_REQUEST,
+    FormType.CONTACT_SALES,
+    FormType.NEWSLETTER_SIGNUP,
+    FormType.COMPARISON_PAGE_CTA,
+    FormType.WEBINAR_REGISTER,
+)
+_FORM_TYPE_WEIGHTS = np.array([0.35, 0.20, 0.15, 0.12, 0.10, 0.08])
+
+
+def _stratified_theme_counts(pop: int, shares: dict[Theme, float]) -> dict[Theme, int]:
+    """Exact integer per-theme counts for `pop` leads — largest-remainder in
+    integer-percent arithmetic, Theme-enum-order tiebreak. Sums to pop."""
+    pct = {theme: round(shares[theme] * 100) for theme in shares}
+    numerator = {theme: pop * pct[theme] for theme in pct}
+    counts = {theme: numerator[theme] // 100 for theme in pct}
+    deficit = pop - sum(counts.values())
+    ranked = sorted(
+        pct, key=lambda theme: (-(numerator[theme] % 100), _THEME_INDEX[theme])
+    )
+    for theme in ranked[:deficit]:
+        counts[theme] += 1
+    return counts
+
+
+def _assign_primary_themes(leads: list[PartialLead], rng: np.random.Generator) -> None:
+    """Stratified seed_label_theme_primary per PERSONA_THEME_SHARE — exact
+    cell counts, shuffled within each persona to decorrelate theme from the
+    channel assignment already on the leads."""
+    by_persona: dict[Persona, list[PartialLead]] = {p: [] for p in Persona}
+    for lead in leads:
+        by_persona[lead.persona].append(lead)
+    for persona, group in by_persona.items():
+        counts = _stratified_theme_counts(len(group), PERSONA_THEME_SHARE[persona])
+        themes: list[Theme] = []
+        for theme, count in counts.items():
+            themes.extend([theme] * count)
+        order = rng.permutation(len(group))
+        for slot, theme in zip(order, themes, strict=True):
+            group[int(slot)].seed_label_theme_primary = theme
+
+
+def _select_f3_path_lead_ids(
+    leads: list[PartialLead], rng: np.random.Generator
+) -> set[str]:
+    """Pick exactly F3_TARGET_PATH_COUNT podcast leads with enough in-window
+    headroom for the 14-day path."""
+    end = date.fromisoformat(TIME_WINDOW_END)
+    cutoff = datetime(end.year, end.month, end.day) - timedelta(
+        days=F3_PATH_WITHIN_DAYS
+    )
+    eligible = [
+        lead
+        for lead in leads
+        if lead.created_via_channel == Channel.PODCAST and lead.created_at < cutoff
+    ]
+    chosen = rng.choice(len(eligible), size=F3_TARGET_PATH_COUNT, replace=False)
+    return {eligible[int(i)].lead_id for i in chosen}
+
+
+def _gap(rng: np.random.Generator, lo_days: int, hi_days: int) -> timedelta:
+    return timedelta(
+        days=int(rng.integers(lo_days, hi_days)), hours=int(rng.integers(0, 24))
+    )
+
+
+def _pick_asset(channel: Channel, theme: Theme, rng: np.random.Generator) -> str:
+    """A content asset slug for `channel`, theme-matched where the channel
+    carries one for that theme."""
+    matching = assets_for(channel, theme)
+    pool = matching if matching else assets_by_channel(channel)
+    return pool[int(rng.integers(len(pool)))].slug
+
+
+def _touchpoint(
+    lead: PartialLead,
+    seq: int,
+    ts: datetime,
+    channel: Channel,
+    event_type: EventType,
+    *,
+    content_asset_slug: str | None = None,
+    is_first: bool = False,
+    is_last: bool = False,
+) -> Touchpoint:
+    utm_source = utm_medium = utm_campaign = None
+    if is_first:
+        utm_source, utm_medium = _CHANNEL_UTM[channel]
+        # First-touch contract: the touchpoint replicates the lead's
+        # denormalized first-touch campaign exactly.
+        utm_campaign = lead.first_touch_utm_campaign
+    return Touchpoint(
+        touchpoint_id=str(uuid.uuid5(_TOUCHPOINT_NS, f"{lead.lead_id}:{seq}")),
+        lead_id=lead.lead_id,
+        ts=ts,
+        channel=channel,
+        event_type=event_type,
+        content_asset_slug=content_asset_slug,
+        utm_source=utm_source,
+        utm_medium=utm_medium,
+        utm_campaign=utm_campaign,
+        is_first_touch=is_first,
+        is_last_touch=is_last,
+    )
+
+
+def _build_one_journey(
+    lead: PartialLead, is_f3: bool, rng: np.random.Generator
+) -> tuple[list[Touchpoint], FormSubmission]:
+    channel = lead.created_via_channel
+    theme = lead.seed_label_theme_primary
+
+    # The form-answer snippet fixes free_text_answer, ground_truth_themes,
+    # and the lead's secondary theme in one draw.
+    snippet = form_answer(lead.persona, channel, theme, rng)
+    lead.seed_label_theme_secondary = snippet.secondary_theme
+
+    # (ts, channel, event_type, content_asset_slug) specs, chronological.
+    first_asset = (
+        lead.first_touch_utm_campaign
+        if channel == Channel.LINKEDIN_PAID
+        else _pick_asset(channel, theme, rng)
+    )
+    specs: list[tuple[datetime, Channel, EventType, str | None]] = [
+        (lead.created_at, channel, _FIRST_TOUCH_EVENT[channel], first_asset)
+    ]
+
+    if is_f3:
+        # podcast first touch -> organic_search blog -> demo_request, <=14d.
+        blog_ts = lead.created_at + _gap(rng, 3, 8)
+        specs.append(
+            (
+                blog_ts,
+                Channel.ORGANIC_SEARCH,
+                EventType.PAGE_VIEW,
+                _pick_asset(Channel.ORGANIC_SEARCH, theme, rng),
+            )
+        )
+        specs.append(
+            (blog_ts + _gap(rng, 2, 6), Channel.ORGANIC_SEARCH, EventType.DEMO_REQUEST, None)
+        )
+        form_type = FormType.DEMO_REQUEST
+    else:
+        # Single-channel: first touch + 0-3 page views + a form submission.
+        ts = lead.created_at
+        for _ in range(int(rng.integers(0, 4))):
+            ts = ts + _gap(rng, 1, 6)
+            specs.append((ts, channel, EventType.PAGE_VIEW, None))
+        ts = ts + _gap(rng, 1, 6)
+        form_type = _FORM_TYPES[
+            int(rng.choice(len(_FORM_TYPES), p=_FORM_TYPE_WEIGHTS))
+        ]
+        event = (
+            EventType.DEMO_REQUEST
+            if form_type == FormType.DEMO_REQUEST
+            else EventType.FORM_SUBMIT
+        )
+        specs.append((ts, channel, event, None))
+
+    last = len(specs) - 1
+    touchpoints = [
+        _touchpoint(
+            lead,
+            seq,
+            ts,
+            ch,
+            event,
+            content_asset_slug=asset,
+            is_first=(seq == 0),
+            is_last=(seq == last),
+        )
+        for seq, (ts, ch, event, asset) in enumerate(specs)
+    ]
+    form_tp = touchpoints[-1]
+    submission = FormSubmission(
+        submission_id=str(uuid.uuid5(_SUBMISSION_NS, lead.lead_id)),
+        lead_id=lead.lead_id,
+        touchpoint_id=form_tp.touchpoint_id,
+        ts=form_tp.ts,
+        form_type=form_type,
+        free_text_question=form_question(form_type, rng),
+        free_text_answer=snippet.text,
+        ground_truth_themes=snippet.ground_truth_themes,
+    )
+    return touchpoints, submission
+
+
+def build_journeys(
+    leads: list[PartialLead],
+    seed: int = DEFAULT_SEED,
+) -> tuple[list[Touchpoint], list[FormSubmission]]:
+    """Assign seed themes and synthesize touchpoints + form submissions.
+
+    Mutates each PartialLead (sets seed_label_theme_primary/secondary) and
+    returns the touchpoint and form_submission row collections.
+    """
+    rng = np.random.default_rng(seed)
+    _assign_primary_themes(leads, rng)
+    f3_ids = _select_f3_path_lead_ids(leads, rng)
+
+    touchpoints: list[Touchpoint] = []
+    submissions: list[FormSubmission] = []
+    for lead in leads:
+        lead_tps, submission = _build_one_journey(lead, lead.lead_id in f3_ids, rng)
+        touchpoints.extend(lead_tps)
+        submissions.append(submission)
+    return touchpoints, submissions
