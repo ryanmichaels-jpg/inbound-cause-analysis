@@ -762,6 +762,124 @@ _FORM_ANSWERS: dict[tuple[Persona, Theme], tuple[Snippet, ...]] = {
             _T.MANUAL_WORK_REDUCTION,
         ),
     ),
+    # Cross-theme cells — the F2/F5 comparison cells. Added in the journeys.py
+    # gate once PERSONA_THEME_SHARE confirmed these (persona, theme) pairs
+    # occur: Maya/David/Carlos x compliance_security (F5), Patricia x
+    # manual_work_reduction (F2).
+    (Persona.MAYA, _T.COMPLIANCE_SECURITY): (
+        Snippet(
+            "Every tool I want to roll out gets stuck in security review for "
+            "a quarter. It is killing our roadmap.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "I am the one chasing SOC2 reports and DPAs for every vendor my "
+            "team wants. Not my job, but it falls to me.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "Procurement will not approve anything without SSO and a data "
+            "residency commitment. Every rollout stalls there.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "Every new point solution my team wants is another security "
+            "review — the tool sprawl doubles our compliance load.",
+            _T.COMPLIANCE_SECURITY,
+            _T.TOOL_SPRAWL_CONSOLIDATION,
+        ),
+        Snippet(
+            "I would consolidate the stack just to cut the SOC2 reviews — "
+            "each disparate system is its own vendor evaluation.",
+            _T.COMPLIANCE_SECURITY,
+            _T.TOOL_SPRAWL_CONSOLIDATION,
+        ),
+    ),
+    (Persona.DAVID, _T.COMPLIANCE_SECURITY): (
+        Snippet(
+            "Deals stall in my prospect's security review for months. I lose "
+            "the quarter waiting on a SOC 2 sign-off.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "Every enterprise deal now needs SSO, a DPA, GDPR answers. My "
+            "reps aren't equipped for that conversation.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "Procurement and security review on the buyer side add ninety "
+            "days to every deal cycle.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "Buyers ask why we run so many systems — each point solution is "
+            "another security review for their team.",
+            _T.COMPLIANCE_SECURITY,
+            _T.TOOL_SPRAWL_CONSOLIDATION,
+        ),
+        Snippet(
+            "The deal needs us to consolidate vendors — every disparate "
+            "system triggers its own vendor evaluation and SOC2 check.",
+            _T.COMPLIANCE_SECURITY,
+            _T.TOOL_SPRAWL_CONSOLIDATION,
+        ),
+    ),
+    (Persona.CARLOS, _T.COMPLIANCE_SECURITY): (
+        Snippet(
+            "A big prospect asked for our SOC2 and I don't even have one "
+            "yet. No idea where to start.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "Suddenly everyone wants SSO and a security review and I'm a "
+            "five-person company. It's overwhelming.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "A customer's procurement team sent me a GDPR and data residency "
+            "questionnaire. I had to look up half of it.",
+            _T.COMPLIANCE_SECURITY,
+        ),
+        Snippet(
+            "Every tool I bolt on is another thing a prospect's security "
+            "review flags — I should consolidate before I get audited.",
+            _T.COMPLIANCE_SECURITY,
+            _T.TOOL_SPRAWL_CONSOLIDATION,
+        ),
+        Snippet(
+            "I stitched together five free tools and now a buyer wants a "
+            "vendor evaluation on each one.",
+            _T.COMPLIANCE_SECURITY,
+            _T.TOOL_SPRAWL_CONSOLIDATION,
+        ),
+    ),
+    (Persona.PATRICIA, _T.MANUAL_WORK_REDUCTION): (
+        Snippet(
+            "My team runs every vendor security check by hand — it is a "
+            "manual slog through spreadsheets.",
+            _T.MANUAL_WORK_REDUCTION,
+        ),
+        Snippet(
+            "User provisioning is all manual here — we add and remove access "
+            "by hand, account by account.",
+            _T.MANUAL_WORK_REDUCTION,
+        ),
+        Snippet(
+            "Every access ticket is manual — IT copy-pastes the same setup "
+            "steps for each new system.",
+            _T.MANUAL_WORK_REDUCTION,
+        ),
+        Snippet(
+            "We track our whole asset inventory by hand in a spreadsheet. "
+            "The manual upkeep eats a full headcount.",
+            _T.MANUAL_WORK_REDUCTION,
+        ),
+        Snippet(
+            "My analysts spend their week on manual reporting pulls — "
+            "copy-paste from four systems into one deck.",
+            _T.MANUAL_WORK_REDUCTION,
+        ),
+    ),
 }
 
 
