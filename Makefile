@@ -1,4 +1,4 @@
-.PHONY: install generate dashboard test fmt lint clean
+.PHONY: install generate dashboard insight test fmt lint clean
 
 install:
 	pip install -e ".[dev]"
@@ -8,6 +8,9 @@ generate:
 
 dashboard:
 	streamlit run src/ica/dashboard.py
+
+insight:
+	python -m ica.insight
 
 test:
 	pytest -v

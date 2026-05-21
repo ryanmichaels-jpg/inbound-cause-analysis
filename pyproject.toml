@@ -17,6 +17,10 @@ dashboard = [
     "streamlit>=1.30",
     "pandas>=2.0",
 ]
+insight = [
+    "anthropic>=0.40",
+    "python-dotenv>=1.0",
+]
 
 [build-system]
 requires = ["hatchling"]
