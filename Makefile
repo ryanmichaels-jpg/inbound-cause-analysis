@@ -4,7 +4,7 @@ install:
 	pip install -e ".[dev]"
 
 generate:
-	python -m ica.cli generate --out data/ica.db --seed 42
+	python -m ica.cli
 
 test:
 	pytest -v

@@ -8,9 +8,11 @@
 
 ```bash
 make install     # installs project in editable mode with dev extras
-make generate    # produces data/ica.db from synthetic generator
-make test        # runs schema and aha-pattern smoke tests
+make generate    # produces data/ica.db (== python -m ica.cli)
+make test        # runs the full test suite incl. the aha-pattern contract
 ```
+
+`make generate` is deterministic — the same `--seed` (default 42) reproduces the same dataset byte-for-byte. Run it first after cloning; `data/ica.db` is git-ignored and regenerable.
 
 ## Project docs
 
@@ -25,6 +27,8 @@ make test        # runs schema and aha-pattern smoke tests
 ## Known v1 limitations
 
 - The Finding 5 comparison cell (non-Patricia leads with a `compliance_security` primary theme) lands at **111 leads** — a uniform 6% of the actual 1,850-lead non-Patricia population, per `aha-patterns.md`'s "~6% of each non-Patricia persona" rule. `aha-patterns.md` also states "~120"; that figure was an estimate against a rounded ~2,000 population. 111 is the precise computation and clears the Finding 5 threshold (≥80) with margin — it is intentional, not drift.
+
+- **Locked CLI knobs.** `python -m ica.cli` supports `--seed` and `--db-path`. `data-world.md` §1 also lists `--total-leads`, `--start-date`, and `--end-date`; these are **locked in v1** — the generator is built for the 2,500-lead world (`channels.py` asserts it) over the fixed 2026-01-01 .. 2026-06-30 window (taxonomy constants). Passing one produces an explanatory error, not a silent no-op. `data-world.md` keeps the knobs as the aspirational interface; this entry is the v1 reality.
 
 ## Known doc inconsistencies
 
