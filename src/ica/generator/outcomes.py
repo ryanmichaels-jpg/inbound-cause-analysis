@@ -127,3 +127,274 @@ dataset mix lands near §5 within tolerance, with CW ~7.1%.
 Output: outcomes table rows + sales_notes rows; every lead has an outcome
 that satisfies the five aha-pattern smoke tests (the CP1 contract).
 """
+
+import uuid
+from datetime import timedelta
+
+import numpy as np
+
+from ica.generator.copy_bank import sales_note
+from ica.schema import OutcomeRow, PartialLead, SalesNote, Touchpoint
+from ica.taxonomy import (
+    BASELINE_OUTCOME_MIX,
+    BROAD_FUNNEL_PERSONA_OUTCOMES,
+    BROAD_FUNNEL_WFL_FRACTION_OF_LOST,
+    CHANNEL_BASELINE_CW_RATE,
+    CHANNEL_TARGET_VOLUME,
+    CLOSED_LOST_SUB_REASONS,
+    DEFAULT_SEED,
+    DISQUALIFIED_SUB_REASONS,
+    F2_TARGET_CELL_CW_RATE,
+    F3_PATH_WITHIN_DAYS,
+    F3_TARGET_PATH_CW_RATE,
+    F4_TARGET_CAMPAIGN,
+    F5_TARGET_CELL_CW_RATE,
+    NURTURE_SUB_REASONS,
+    PERSONA_GHOST_SHARE_OF_NON_WINS,
+    Channel,
+    EventType,
+    Outcome,
+    Persona,
+    Theme,
+)
+
+__all__ = ["build_outcomes"]
+
+_NOTE_NS = uuid.uuid5(uuid.NAMESPACE_DNS, "ica.sales-note")
+
+# Cell wins are placed on these channels in this order — medium channels
+# first, podcast last, linkedin_paid never. Keeps linkedin near its 3% F1
+# cap regardless of how many cell members it holds (composition model).
+_CELL_FILL_ORDER = (
+    Channel.ORGANIC_SEARCH,
+    Channel.NEWSLETTER,
+    Channel.WEBINAR,
+    Channel.COMPARISON_PAGE,
+    Channel.PODCAST,
+)
+
+# days_to_outcome bands per outcome (data-world §1: closed_won slowest,
+# ghosted fastest).
+_DAYS_BAND: dict[Outcome, tuple[int, int]] = {
+    Outcome.CLOSED_WON: (45, 90),
+    Outcome.CLOSED_LOST: (35, 80),
+    Outcome.DISQUALIFIED: (14, 45),
+    Outcome.GHOSTED: (14, 30),
+    Outcome.NURTURE: (30, 75),
+}
+
+
+def _derive_f3_path(
+    leads: list[PartialLead], touchpoints: list[Touchpoint]
+) -> set[str]:
+    """Re-derive the 50 Finding-3 path leads from the touchpoint stream."""
+    created = {lead.lead_id: lead.created_at for lead in leads}
+    channel = {lead.lead_id: lead.created_via_channel for lead in leads}
+    by_lead: dict[str, list[Touchpoint]] = {}
+    for tp in touchpoints:
+        by_lead.setdefault(tp.lead_id, []).append(tp)
+    path: set[str] = set()
+    for lead_id, tps in by_lead.items():
+        if channel[lead_id] != Channel.PODCAST:
+            continue
+        horizon = created[lead_id] + timedelta(days=F3_PATH_WITHIN_DAYS)
+        has_organic = any(
+            tp.channel == Channel.ORGANIC_SEARCH and tp.ts <= horizon for tp in tps
+        )
+        has_demo = any(
+            tp.event_type == EventType.DEMO_REQUEST and tp.ts <= horizon for tp in tps
+        )
+        if has_organic and has_demo:
+            path.add(lead_id)
+    return path
+
+
+def _place_cell_wins(
+    pool: list[PartialLead],
+    target: int,
+    budget: dict[Channel, int],
+    won: dict[str, bool],
+) -> None:
+    """Mark `target` leads in `pool` won, filling channels in _CELL_FILL_ORDER
+    and never linkedin_paid, so the linkedin CW cap is preserved. Decrements
+    `budget`. Remaining pool leads are marked not-won."""
+    remaining = target
+    for channel in _CELL_FILL_ORDER:
+        here = [lead for lead in pool if lead.created_via_channel == channel]
+        take = min(remaining, budget[channel], len(here))
+        for lead in here[:take]:
+            won[lead.lead_id] = True
+        budget[channel] -= take
+        remaining -= take
+    for lead in pool:
+        won.setdefault(lead.lead_id, False)
+
+
+def _assign_won(
+    leads: list[PartialLead], f3_path: set[str], rng: np.random.Generator
+) -> dict[str, bool]:
+    """closed_won status per lead, composing F1/F2/F3/F5 (F4's CW folds into
+    the linkedin cap). Stratified for exact cell rates."""
+    budget = {
+        ch: round(CHANNEL_TARGET_VOLUME[ch] * CHANNEL_BASELINE_CW_RATE[ch])
+        for ch in Channel
+    }
+    won: dict[str, bool] = {}
+
+    # F3 — the 50 path leads (all podcast).
+    path = [lead for lead in leads if lead.lead_id in f3_path]
+    n_path_win = round(len(path) * F3_TARGET_PATH_CW_RATE)
+    win_idx = set(rng.choice(len(path), size=n_path_win, replace=False).tolist())
+    for i, lead in enumerate(path):
+        won[lead.lead_id] = i in win_idx
+    budget[Channel.PODCAST] -= n_path_win
+
+    # F5 — (Patricia, compliance_security) cell, then F2 — (Maya, mwr) cell.
+    # The cell smoke test reads the whole cell; path members already have a
+    # win status, so place only the residual on non-path members.
+    for persona, theme, rate in (
+        (Persona.PATRICIA, Theme.COMPLIANCE_SECURITY, F5_TARGET_CELL_CW_RATE),
+        (Persona.MAYA, Theme.MANUAL_WORK_REDUCTION, F2_TARGET_CELL_CW_RATE),
+    ):
+        cell = [
+            lead
+            for lead in leads
+            if lead.persona == persona and lead.seed_label_theme_primary == theme
+        ]
+        already = sum(won.get(lead.lead_id, False) for lead in cell)
+        pool = [lead for lead in cell if lead.lead_id not in won]
+        _place_cell_wins(pool, round(len(cell) * rate) - already, budget, won)
+
+    # Channel residual — each channel's leftover budget on its unassigned
+    # (non-cell, non-path) leads.
+    by_channel: dict[Channel, list[PartialLead]] = {ch: [] for ch in Channel}
+    for lead in leads:
+        if lead.lead_id not in won:
+            by_channel[lead.created_via_channel].append(lead)
+    for channel, pool in by_channel.items():
+        take = max(0, min(budget[channel], len(pool)))
+        chosen = set(rng.choice(len(pool), size=take, replace=False).tolist())
+        for i, lead in enumerate(pool):
+            won[lead.lead_id] = i in chosen
+    return won
+
+
+def _non_cw_outcome(
+    lead: PartialLead, in_broad_funnel: bool, rng: np.random.Generator
+) -> Outcome:
+    """A non-won lead's outcome. broad_funnel leads follow §11's per-persona
+    distribution (Finding 4); others use the §5 ghost skew + baseline mix."""
+    if in_broad_funnel:
+        dist = BROAD_FUNNEL_PERSONA_OUTCOMES[lead.persona]
+        options = [o for o in Outcome if o != Outcome.CLOSED_WON]
+        weights = np.array([dist[o] for o in options], dtype=float)
+    else:
+        ghost = PERSONA_GHOST_SHARE_OF_NON_WINS[lead.persona]
+        rest = 1.0 - ghost
+        mix = BASELINE_OUTCOME_MIX
+        denom = mix[Outcome.CLOSED_LOST] + mix[Outcome.DISQUALIFIED] + mix[Outcome.NURTURE]
+        options = [
+            Outcome.GHOSTED,
+            Outcome.CLOSED_LOST,
+            Outcome.DISQUALIFIED,
+            Outcome.NURTURE,
+        ]
+        weights = np.array(
+            [
+                ghost,
+                rest * mix[Outcome.CLOSED_LOST] / denom,
+                rest * mix[Outcome.DISQUALIFIED] / denom,
+                rest * mix[Outcome.NURTURE] / denom,
+            ]
+        )
+    weights = weights / weights.sum()
+    return options[int(rng.choice(len(options), p=weights))]
+
+
+def _sub_reason(
+    outcome: Outcome,
+    in_broad_funnel: bool,
+    persona: Persona,
+    rng: np.random.Generator,
+) -> str | None:
+    if outcome == Outcome.CLOSED_LOST:
+        if in_broad_funnel and rng.random() < BROAD_FUNNEL_WFL_FRACTION_OF_LOST[persona]:
+            return "wrong_fit_late"
+        return CLOSED_LOST_SUB_REASONS[int(rng.integers(len(CLOSED_LOST_SUB_REASONS)))]
+    if outcome == Outcome.DISQUALIFIED:
+        return DISQUALIFIED_SUB_REASONS[
+            int(rng.integers(len(DISQUALIFIED_SUB_REASONS)))
+        ]
+    if outcome == Outcome.NURTURE:
+        return NURTURE_SUB_REASONS[int(rng.integers(len(NURTURE_SUB_REASONS)))]
+    return None  # closed_won, ghosted
+
+
+def _pipeline_value(outcome: Outcome, rng: np.random.Generator) -> int | None:
+    if outcome == Outcome.CLOSED_WON:
+        return int(rng.integers(40_000, 200_001))
+    if outcome == Outcome.CLOSED_LOST:
+        return int(rng.integers(30_000, 150_001))
+    return None
+
+
+def build_outcomes(
+    leads: list[PartialLead],
+    touchpoints: list[Touchpoint],
+    seed: int = DEFAULT_SEED,
+) -> tuple[list[OutcomeRow], list[SalesNote]]:
+    """Assign every lead an outcome (running the F4 -> F1 -> F2 -> F3 -> F5
+    skew composition) and emit sales_notes for the leads that engaged sales.
+    """
+    rng = np.random.default_rng(seed)
+    f3_path = _derive_f3_path(leads, touchpoints)
+    won = _assign_won(leads, f3_path, rng)
+
+    demo_lead_ids = {
+        tp.lead_id
+        for tp in touchpoints
+        if tp.event_type in (EventType.DEMO_REQUEST, EventType.DEMO_ATTENDED)
+    }
+
+    outcomes: list[OutcomeRow] = []
+    sales_notes: list[SalesNote] = []
+    for lead in leads:
+        in_bf = lead.first_touch_utm_campaign == F4_TARGET_CAMPAIGN
+        if won[lead.lead_id]:
+            outcome = Outcome.CLOSED_WON
+        else:
+            outcome = _non_cw_outcome(lead, in_bf, rng)
+        days = int(rng.integers(*_DAYS_BAND[outcome]))
+        resolved_at = lead.created_at + timedelta(days=days)
+        outcomes.append(
+            OutcomeRow(
+                lead_id=lead.lead_id,
+                outcome=outcome,
+                resolved_at=resolved_at,
+                days_to_outcome=days,
+                sub_reason=_sub_reason(outcome, in_bf, lead.persona, rng),
+                pipeline_value_usd=_pipeline_value(outcome, rng),
+            )
+        )
+        # sales_notes — only leads that engaged sales (reached SQL/Opp):
+        # a closed/disqualified outcome AND a demo touchpoint.
+        engaged = outcome in (
+            Outcome.CLOSED_WON,
+            Outcome.CLOSED_LOST,
+            Outcome.DISQUALIFIED,
+        )
+        if engaged and lead.lead_id in demo_lead_ids:
+            kind = "rep_note" if rng.random() < 0.5 else "call_transcript_snippet"
+            snippet = sales_note(lead.seed_label_theme_primary, kind, rng)
+            sales_notes.append(
+                SalesNote(
+                    note_id=str(uuid.uuid5(_NOTE_NS, lead.lead_id)),
+                    lead_id=lead.lead_id,
+                    ts=resolved_at - timedelta(days=int(rng.integers(3, 12))),
+                    kind=kind,
+                    author=("sdr", "ae", "sales_engineer")[int(rng.integers(3))],
+                    text=snippet.text,
+                    ground_truth_themes=snippet.ground_truth_themes,
+                )
+            )
+    return outcomes, sales_notes
