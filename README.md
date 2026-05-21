@@ -25,3 +25,10 @@ make test        # runs schema and aha-pattern smoke tests
 ## Known v1 limitations
 
 - The Finding 5 comparison cell (non-Patricia leads with a `compliance_security` primary theme) lands at **111 leads** — a uniform 6% of the actual 1,850-lead non-Patricia population, per `aha-patterns.md`'s "~6% of each non-Patricia persona" rule. `aha-patterns.md` also states "~120"; that figure was an estimate against a rounded ~2,000 population. 111 is the precise computation and clears the Finding 5 threshold (≥80) with margin — it is intentional, not drift.
+
+## Known doc inconsistencies
+
+These are intentional pre-skew vs post-skew distinctions, not errors — `data-world.md` §5 describes the *baseline* outcome mix, and the aha-pattern skews deliberately move it.
+
+- **Dataset closed-won rate.** §5 states a 6% baseline closed-won share; the generated dataset shows **~7.1%**. The Finding 1 skew lifts per-channel CW to `CHANNEL_BASELINE_CW_RATE`, whose volume-weighted average is ~7.1% — the figure `aha-patterns.md` Finding 3 itself uses for the lift calculation.
+- **Disqualified / nurture shares.** §5's baseline mix is 25% disqualified / 35% nurture; the generated dataset shows **~29% / ~29%**. Finding 4 deliberately rewrites the 600 `linkedin_q2_broad_funnel` leads to a disqualify/ghost-heavy distribution (the "expensive non-ICP volume" the finding catches), which post-skew lifts dataset disqualified and lowers nurture.
