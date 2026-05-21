@@ -111,3 +111,84 @@ generator changes. To resolve in the cli.py round; seed.py's v1
 Output: a populated `data/ica.db` with all five tables, plus a returned
 row-count summary.
 """
+
+from pathlib import Path
+
+from ica.generator.channels import assign_channels
+from ica.generator.journeys import build_journeys
+from ica.generator.outcomes import build_outcomes
+from ica.generator.personas import sample_personas
+from ica.schema import (
+    insert_form_submission,
+    insert_lead,
+    insert_outcome,
+    insert_sales_note,
+    insert_touchpoint,
+    open_db,
+)
+from ica.taxonomy import DEFAULT_SEED
+
+__all__ = ["DEFAULT_DB_PATH", "generate"]
+
+DEFAULT_DB_PATH = "data/ica.db"
+
+
+def generate(
+    seed: int = DEFAULT_SEED, db_path: str = DEFAULT_DB_PATH
+) -> dict[str, int]:
+    """Run the full generator and write a fresh SQLite database.
+
+    Wipes any existing file at `db_path`, rebuilds the five tables, and
+    inserts every row in foreign-key order. Returns per-table row counts.
+    Deterministic in `seed`.
+    """
+    # Generator chain: personas -> channels -> journeys -> outcomes.
+    # content_library and copy_bank are static import banks used inside
+    # journeys.py and outcomes.py, not steps here.
+    leads = sample_personas(seed)
+    assign_channels(leads, seed)
+    # aha-patterns.md places Finding 3's skew as a seed.py step. It was
+    # moved for single-ownership of the touchpoints table: F3 path
+    # selection + touchpoint synthesis live in journeys.py
+    # (_select_f3_path_lead_ids + build_journeys); F3's ~45% CW lift
+    # composes in outcomes.py (_assign_won).
+    touchpoints, form_submissions = build_journeys(leads, seed)
+    outcomes, sales_notes = build_outcomes(leads, touchpoints, seed)
+    lead_rows = [lead.to_lead() for lead in leads]
+
+    # Fresh DB — wipe and rebuild so a re-run never collides on a primary key.
+    path = Path(db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.unlink(missing_ok=True)
+
+    conn = open_db(str(path))
+    try:
+        # Insertion order honors the data-world.md §2.6 FK diagram.
+        for lead in lead_rows:
+            insert_lead(conn, lead)
+        for touchpoint in touchpoints:
+            insert_touchpoint(conn, touchpoint)
+        for submission in form_submissions:
+            insert_form_submission(conn, submission)
+        for note in sales_notes:
+            insert_sales_note(conn, note)
+        for outcome in outcomes:
+            insert_outcome(conn, outcome)
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "leads": len(lead_rows),
+        "touchpoints": len(touchpoints),
+        "form_submissions": len(form_submissions),
+        "sales_notes": len(sales_notes),
+        "outcomes": len(outcomes),
+    }
+
+
+if __name__ == "__main__":
+    counts = generate()
+    print(f"Wrote {DEFAULT_DB_PATH}:")
+    for table, count in counts.items():
+        print(f"  {table}: {count}")
