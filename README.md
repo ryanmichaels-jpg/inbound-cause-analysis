@@ -47,7 +47,7 @@ flowchart TB
     CRM -. production swap .-> DB
     TOUCH -. production swap .-> DB
     DB --> FIND["Findings layer<br/>5 SQL queries → F1–F5"]
-    DB --> EXTRACT["CP4 resonance extraction<br/>Claude Haiku 4.5"]
+    DB --> EXTRACT["Resonance extraction<br/>Claude Haiku 4.5"]
     EXTRACT --> RES["resonance.md / .json<br/>94.1% agreement"]
     FIND --> ARTGEN["Artifact generation<br/>Claude Sonnet 4.6"]
     RES --> ARTGEN
@@ -81,13 +81,13 @@ The dataset is built to express five findings — it is *reverse-engineered* fro
 
 **Finding 1 — the channel-quality surprise.** Podcast-sourced leads close at **30%** (200 leads); LinkedIn-paid leads close at **3%** (1,000 leads) — a 10× quality gap running directly against volume. A team watching lead counts would double down on LinkedIn; a team watching pipeline quality would protect podcast budget at all costs. It is the classic Pareto trap: the channel that *looks* productive is the one quietly burning spend on leads that never close. The action ICA drafts is a content brief to replicate what makes the podcast channel convert — [`F1_content_brief.md`](artifacts/F1_content_brief.md).
 
-**Finding 2 — message–persona resonance.** A manual-work-reduction message closes mid-market RevOps leaders at **25%**, against **2.9%** for the identical message shown to every other persona — a ~9× lift. The lesson is that resonance is not a property of the copy; it is a *pairing*. The same words that win one buyer are noise to another — which means message testing that does not segment by persona will average the signal straight out of existence. ICA drafts four ad-copy variants aimed only at the persona that converts — [`F2_ad_copy_variants.md`](artifacts/F2_ad_copy_variants.md).
+**Finding 2 — message–persona resonance.** A manual-work-reduction message closes mid-market RevOps leaders at **25%**, against **2.9%** for the identical message shown to every other persona — an 8.7× lift. The lesson is that resonance is not a property of the copy; it is a *pairing*. The same words that win one buyer are noise to another — which means message testing that does not segment by persona will average the signal straight out of existence. ICA drafts four ad-copy variants aimed only at the persona that converts — [`F2_ad_copy_variants.md`](artifacts/F2_ad_copy_variants.md).
 
-**Finding 3 — the winning journey.** Leads who follow a podcast → blog → demo-request path within 14 days close at **44%**, against a **7.1%** dataset-wide rate — a 6.2× lift across a 50-lead cohort. The signal is a *sequence*, recovered by reconstructing each lead's full touchpoint history; a first- or last-touch attribution would credit a single channel and miss the path entirely. ICA drafts a six-touch sequence play that systematizes the journey deliberately instead of leaving it to chance — [`F3_sequence_play.md`](artifacts/F3_sequence_play.md).
+**Finding 3 — the winning journey.** Leads who follow a podcast → organic-search → demo-request path within 14 days close at **44%**, against a **7.1%** dataset-wide rate — a 6.2× lift across a 50-lead cohort. The signal is a *sequence*, recovered by reconstructing each lead's full touchpoint history; a first- or last-touch attribution would credit a single channel and miss the path entirely. ICA drafts a six-touch sequence play that systematizes the journey deliberately instead of leaving it to chance — [`F3_sequence_play.md`](artifacts/F3_sequence_play.md).
 
 **Finding 4 — ICP fit versus volume.** The largest LinkedIn campaign (`linkedin_q2_broad_funnel`, 600 leads) carries an **80%** bad-outcome share — disqualified, ghosted, or lost as wrong-fit — and a mean ICP-fit score of **37** against the dataset-wide **53**. It is the most expensive finding in the set: the campaign generates the most leads and the least pipeline, and raw lead-count reporting actively hides that. ICA drafts an ICP refinement — concrete exclusion and inclusion criteria, plus a checkpoint — to stop the spend bleeding into non-ICP volume: [`F4_icp_refinement.md`](artifacts/F4_icp_refinement.md).
 
-**Finding 5 (secondary) — compliance resonance.** Enterprise IT buyers on a compliance/security message close at **18%**, a ~5× lift over the **3.6%** other personas show on the same message. It is a narrower, lower-volume instance of the Finding 2 pattern — surfaced for completeness and to show the resonance effect is structural, not a one-off — and it, too, gets its own ad-copy artifact: [`F5_ad_copy_variants.md`](artifacts/F5_ad_copy_variants.md).
+**Finding 5 (secondary) — compliance resonance.** Enterprise IT buyers on a compliance/security message close at **18%**, a 5.0× lift over the **3.6%** other personas show on the same message. It is a narrower, lower-volume instance of the Finding 2 pattern — surfaced for completeness and to show the resonance effect is structural, not a one-off — and it, too, gets its own ad-copy artifact: [`F5_ad_copy_variants.md`](artifacts/F5_ad_copy_variants.md).
 
 ## The signature feature — auto-generated GTM artifacts
 
@@ -146,7 +146,7 @@ That tradeoff propagated cleanly downstream: the per-artifact corroboration figu
 ## Quickstart
 
 ```bash
-git clone <repo-url> && cd "Inbound case analysis"
+git clone https://github.com/ryanmichaels-jpg/inbound-cause-analysis.git && cd inbound-cause-analysis
 
 make install            # core + dev deps (generator + test suite)
 make generate           # build data/ica.db — deterministic, seed 42
