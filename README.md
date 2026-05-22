@@ -8,7 +8,7 @@
 
 ## Why this exists
 
-For most GTM teams, aside from a one-line 'attribution' CRM field, the inbound lead queue is a black box. As an SDR, some weeks it was full of real ICP buyers; some weeks it was consultants, competitors, or people who would never have budget. I'd work each lead the same way regardless, because aside from the (sometimes) enriched LinkedIn or company URL, nothing told me which leads were which - or, more importantly, why the good ones were showing up in the first place.
+For most GTM teams, aside from a one-line 'attribution' CRM field, the inbound lead queue is a black box. As an SDR, some weeks it was full of real ICP buyers; some weeks it was consultants, competitors, or people who would never have budget. I'd work each lead the same way regardless, because aside from the (sometimes) enriched LinkedIn or company URL on the opportunity, nothing told me which leads were which - or, more importantly, why the good ones were showing up in the first place & how we could produce more of them
 
 The reporting on either side of me did not close that gap. I was siloed inbetween Marketing and Account Executives.
 
