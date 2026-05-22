@@ -8,13 +8,17 @@
 
 ## Why this exists
 
-As an SDR, the inbound queue was a black box. Some weeks it was full of real buyers; some weeks it was students, competitors, and people who would never have budget. I worked the list the same way regardless, because nothing told me which leads were which — or why the good ones had shown up at all.
+For most GTM teams, aside from a one-line 'attribution' CRM field, the inbound lead queue is a black box. As an SDR, some weeks it was full of real ICP buyers; some weeks it was consultants, competitors, or people who would never have budget. I'd work each lead the same way regardless, because aside from the (sometimes) enriched LinkedIn or company URL, nothing told me which leads were which - or, more importantly, why the good ones were showing up in the first place.
 
-The reporting on either side of me did not close that gap. Marketing reported MQLs at the top of the funnel; sales reported closed-won at the bottom. The question in the middle — *which* messages, channels, and journeys actually produced revenue, and which just produced volume — never had an owner, so it never had an answer. Every quarter the pipeline review asked it, and every quarter the honest response was a shrug and a confident-sounding guess.
+The reporting on either side of me did not close that gap. I was siloed inbetween Marketing and Account Executives.
 
-Most GTM teams respond to that gap by optimizing tactics: shuffling the channel mix, A/B testing subject lines, rewriting lead-routing rules. ICA is built on the opposite bet. Tuning tactics in isolation chases noise. The higher-leverage move is to reconstruct *why* a lead raised their hand in the first place, cluster those reasons across thousands of leads, and then do deliberately more of exactly what worked.
+Marketing reported MQLs at the top of the funnel; sales reported closed-won at the bottom. 
 
-ICA is a root-cause analysis pipeline for inbound. Where a traditional RCA finds what to eliminate, ICA finds what to amplify — and then writes the GTM artifacts a team can act on this week.
+The question in the middle — *which* messages, channels, and journeys actually produced revenue, and which just produced volume — never had an owner, so it never had an answer. Every quarter the pipeline review asked it, and every quarter was a shrug and a confident-sounding guess.
+
+Most GTM teams respond to that gap by optimizing tactics: shuffling the channel mix, A/B testing, rewriting lead-routing rules. ICA is built on the opposite bet. Tuning tactics in isolation chases noise. I've hypothesized that the higher-leverage move is to reconstruct *why* a lead raised their hand in the first place, cluster those reasons across thousands of leads, and then do deliberately more of exactly what worked.
+
+ICA is a root-cause analysis pipeline for inbound. 
 
 It runs end to end on synthetic data, so the whole project clones and runs in two commands. But every layer above ingestion is source-agnostic — the same pipeline runs on real CRM data with a single adapter swapped, which is the difference between a demo and a system.
 
@@ -25,7 +29,7 @@ It runs end to end on synthetic data, so the whole project clones and runs in tw
 
 ## What it does
 
-- **Generates a realistic GTM dataset** — 2,500 inbound leads across five linked tables, deterministic from a single seed, carrying the messy qualitative signal real CRMs hold: form free-text, "how did you hear about us," and simulated sales-call notes.
+- **Generates a GTM dataset** — 2,500 inbound leads across five linked tables, deterministic from a single seed, carrying the messy qualitative signal real CRMs hold: form free-text, "how did you hear about us," and simulated sales-call notes.
 - **Surfaces five "aha" findings** about why inbound converts — a channel-quality surprise, a message–persona resonance differential, a winning multi-touch journey, an ICP-fit-versus-volume mismatch, and a secondary compliance-resonance pattern — each recovered by plain SQL and guarded by an automated test.
 - **Extracts the *why* with an LLM** — Claude reads 2,736 raw free-text snippets and re-derives the resonance themes independently, then the extraction is graded against ground truth (94.1% agreement) and across runs (99.1% stable).
 - **Auto-drafts five GTM action artifacts** — a content brief, two sets of ad-copy variants, a sequence play, and an ICP refinement — each grounded in a finding and the buyers' own words, emitted as human-readable Markdown *and* tooling-ready JSON.
@@ -33,7 +37,7 @@ It runs end to end on synthetic data, so the whole project clones and runs in tw
 
 ## How it works
 
-ICA is a five-stage pipeline. Synthetic ingestion produces a SQLite database; a findings layer runs deterministic SQL over it; an LLM resonance layer extracts themes from the free text; an LLM artifact layer drafts the GTM plays; and a Streamlit dashboard renders the result. The diagram below is the whole system — solid nodes are built and runnable, grey dashed nodes are the production wiring (sketched and argued, not built).
+ICA is a five-stage pipeline. Synthetic ingestion produces a SQLite database; a findings layer runs deterministic SQL over it; an LLM resonance layer extracts themes from the free text; an LLM artifact layer drafts the GTM plays; and a Streamlit dashboard renders the result. The diagram below is the whole system — solid nodes are built and runnable, grey dashed nodes are the production wiring.
 
 ```mermaid
 flowchart TB
@@ -65,7 +69,9 @@ flowchart TB
     classDef prod fill:#eeeeee,stroke:#999999,stroke-dasharray:4,color:#555555
 ```
 
-**Ingestion.** `ica.generator` builds a deterministic synthetic dataset — five linked SQLite tables: `leads` (firmographics, persona, ICP-fit score), `touchpoints` (the full attribution trail), `form_submissions` and `sales_notes` (the qualitative free text), and `outcomes`. It covers 2,500 leads over a fixed January–June 2026 window. The dataset is *reverse-engineered*: it is generated so that the five findings are provably present, then the findings are recovered from it independently — the generator and the analysis share no code. A single integer seed drives every random draw through NumPy and Faker, so the same seed reproduces the database byte for byte. The qualitative fields are the point — they carry the buyer's own language, which is what the resonance layer reads.
+**Ingestion.** `ica.generator` builds a deterministic synthetic dataset — five linked SQLite tables: `leads` (firmographics, persona, ICP-fit score), `touchpoints` (the full attribution trail), `form_submissions` and `sales_notes` (the qualitative free text), and `outcomes`. 
+
+It covers 2,500 leads over a fixed January–June 2026 window. The dataset is *reverse-engineered*: it is generated so that the five findings are provably present, then the findings are recovered from it independently — the generator and the analysis share no code. A single integer seed drives every random draw through NumPy and Faker, so the same seed reproduces the database byte for byte. The qualitative fields are the point — they carry the buyer's own language, which is what the resonance layer reads.
 
 **Findings layer.** Five SQL queries recover the engineered patterns — closed-won rate by channel, by persona × theme, by reconstructed journey path, and bad-outcome share by campaign. These are pure aggregations with no model involved, and an automated contract test (`test_aha_patterns.py`) re-verifies all five on every run, so a regression in the generator cannot silently break a finding.
 
@@ -81,17 +87,17 @@ The dataset is built to express five findings — it is *reverse-engineered* fro
 
 **Finding 1 — the channel-quality surprise.** Podcast-sourced leads close at **30%** (200 leads); LinkedIn-paid leads close at **3%** (1,000 leads) — a 10× quality gap running directly against volume. A team watching lead counts would double down on LinkedIn; a team watching pipeline quality would protect podcast budget at all costs. It is the classic Pareto trap: the channel that *looks* productive is the one quietly burning spend on leads that never close. The action ICA drafts is a content brief to replicate what makes the podcast channel convert — [`F1_content_brief.md`](artifacts/F1_content_brief.md).
 
-**Finding 2 — message–persona resonance.** A manual-work-reduction message closes mid-market RevOps leaders at **25%**, against **2.9%** for the identical message shown to every other persona — an 8.7× lift. The lesson is that resonance is not a property of the copy; it is a *pairing*. The same words that win one buyer are noise to another — which means message testing that does not segment by persona will average the signal straight out of existence. ICA drafts four ad-copy variants aimed only at the persona that converts — [`F2_ad_copy_variants.md`](artifacts/F2_ad_copy_variants.md).
+**Finding 2 — message–persona resonance.** A manual-work-reduction message closes mid-market RevOps leaders at **25%**, against **2.9%** for the identical message shown to every other persona — an 8.7× lift. The lesson is that resonance is a *pairing*. The same words that win one buyer are noise to another — which means message testing that does not segment by persona will average the signal straight out of existence. ICA drafts four ad-copy variants aimed only at the persona that converts — [`F2_ad_copy_variants.md`](artifacts/F2_ad_copy_variants.md).
 
 **Finding 3 — the winning journey.** Leads who follow a podcast → organic-search → demo-request path within 14 days close at **44%**, against a **7.1%** dataset-wide rate — a 6.2× lift across a 50-lead cohort. The signal is a *sequence*, recovered by reconstructing each lead's full touchpoint history; a first- or last-touch attribution would credit a single channel and miss the path entirely. ICA drafts a six-touch sequence play that systematizes the journey deliberately instead of leaving it to chance — [`F3_sequence_play.md`](artifacts/F3_sequence_play.md).
 
 **Finding 4 — ICP fit versus volume.** The largest LinkedIn campaign (`linkedin_q2_broad_funnel`, 600 leads) carries an **80%** bad-outcome share — disqualified, ghosted, or lost as wrong-fit — and a mean ICP-fit score of **37** against the dataset-wide **53**. It is the most expensive finding in the set: the campaign generates the most leads and the least pipeline, and raw lead-count reporting actively hides that. ICA drafts an ICP refinement — concrete exclusion and inclusion criteria, plus a checkpoint — to stop the spend bleeding into non-ICP volume: [`F4_icp_refinement.md`](artifacts/F4_icp_refinement.md).
 
-**Finding 5 (secondary) — compliance resonance.** Enterprise IT buyers on a compliance/security message close at **18%**, a 5.0× lift over the **3.6%** other personas show on the same message. It is a narrower, lower-volume instance of the Finding 2 pattern — surfaced for completeness and to show the resonance effect is structural, not a one-off — and it, too, gets its own ad-copy artifact: [`F5_ad_copy_variants.md`](artifacts/F5_ad_copy_variants.md).
+**Finding 5 — compliance resonance.** Enterprise IT buyers on a compliance/security message close at **18%**, a 5.0× lift over the **3.6%** other personas show on the same message. It is a narrower, lower-volume instance of the Finding 2 pattern — surfaced for completeness and to show the resonance effect is structural, not a one-off — and it, too, gets its own ad-copy artifact: [`F5_ad_copy_variants.md`](artifacts/F5_ad_copy_variants.md).
 
 ## The signature feature — auto-generated GTM artifacts
 
-Most analytics projects stop at a dashboard: here is what happened, good luck. ICA closes the loop. For each finding, Claude Sonnet 4.6 drafts one GTM action artifact — and because the artifacts are the differentiator, they are built to be *grounded*, not generic.
+As an SDR I'd get frustrated with dashboards that only told me what had previously happened. It felt obvious that there should be better communication between marketing, pre-sales, post-sales, and product. This project attempts to close the loop. For each finding, Claude Sonnet 4.6 drafts one GTM action artifact — and because the artifacts are the differentiator, they are built to be *grounded*, rather than generic.
 
 Each artifact is generated from three inputs: the finding's hard numbers, a set of real buyer quotes pulled verbatim from that segment's free text, and — for the resonance findings — the independent extraction's corroboration of the theme. That grounding shows in the output: the F1 content brief names the "Manual Ops Tax" because buyers in the podcast segment used that exact framing; the F2 ad copy mirrors phrasing lifted from real form answers. An artifact that cannot point back to a number or a quote does not get written.
 
@@ -126,9 +132,9 @@ The resonance layer is where ICA is most exposed to the usual objection about LL
 | cross_team_alignment | 82% | 109 |
 | **Overall** | **94.1%** | **2,736** |
 
-**Stability.** The extraction runs three times at temperature 0; **99.1%** of snippets received the same primary theme in all three runs. Stability is reported, not assumed — a non-deterministic step in a pipeline should be measured, not waved past.
+**Stability.** The extraction runs three times at temperature 0; **99.1%** of snippets received the same primary theme in all three runs. Stability is reported, not assumed — and a non-deterministic step in a pipeline should be measured.
 
-**The iteration that earned those numbers.** The first extraction run came back at 92.3% overall — but `rep_efficiency` sat at just **72%**, far below the rest. Rather than ship it, a targeted diagnostic re-extracted only the `rep_efficiency` snippets: **100%** of the mis-tags went to a single theme, `manual_work_reduction`. The mis-tagged snippets were rep-productivity statements that named a manual *cause* — *"call quality would be fine if my AEs weren't list-building by hand."* The v1 prompt carried no rule for that pair, so the words "manual" and "by hand" pulled the model the wrong way.
+**The iteration that earned those numbers.** The first extraction run came back at 92.3% overall — but `rep_efficiency` sat at just **72%**, far below the rest. Rather than shipping it, a targeted diagnostic re-extracted only the `rep_efficiency` snippets: **100%** of the mis-tags went to a single theme, `manual_work_reduction`. The mis-tagged snippets were rep-productivity statements that named a manual *cause* — *"call quality would be fine if my AEs weren't list-building by hand."* The v1 prompt carried no rule for that pair, so the words "manual" and "by hand" pulled the model the wrong way.
 
 The fix was a disambiguation block applying the taxonomy's existing goal-versus-symptom rule to the `rep_efficiency` / `manual_work_reduction` pair: when a snippet names a selling-capacity goal caused by manual work, the goal is primary and the manual cause is secondary. Re-running full-corpus extraction:
 
@@ -139,9 +145,9 @@ The fix was a disambiguation block applying the taxonomy's existing goal-versus-
 | Cross-run stability | 98.8% | **99.1%** |
 | `manual_work_reduction` agreement | 99% | 90% |
 
-Note the honest part: `manual_work_reduction` *gave back* nine points. That is the expected shape of disambiguating two genuinely adjacent themes — snippets that read as "a rep problem caused by manual work" now correctly route to `rep_efficiency`, and a few of them were seeded `manual_work_reduction`. Overall still netted +1.8, so v2 was kept against a pre-agreed rule (`rep_efficiency` ≥ 85% **and** overall not regressed). One iteration, no spiral.
+Note that: `manual_work_reduction` *gave back* nine points. That is the expected shape of disambiguating two genuinely adjacent themes — snippets that read as "a rep problem caused by manual work" now correctly route to `rep_efficiency`, and a few of them were seeded `manual_work_reduction`. Overall still netted +1.8, so v2 was kept against a pre-agreed rule (`rep_efficiency` ≥ 85% **and** overall not regressed). One iteration, no spiral.
 
-That tradeoff propagated cleanly downstream: the per-artifact corroboration figures — the share of a segment's snippets the independent extraction confirms — shifted with it (Finding 2's corroboration moved 100% → 95%, Finding 5's 94% → 91%). The artifacts cite v2 statistics, not stale pre-iteration numbers; the consistency from prompt change → per-theme deltas → per-artifact corroboration is the trace that the iteration was real and fully reconciled.
+That tradeoff propagated cleanly downstream: the per-artifact corroboration figures — the share of a segment's snippets the independent extraction confirms — shifted with it (Finding 2's corroboration moved 100% → 95%, Finding 5's 94% → 91%). The artifacts cite v2 statistics instead of the stale pre-iteration numbers. The consistency from prompt change → per-theme deltas → per-artifact corroboration is the trace that the iteration was real and fully reconciled.
 
 ## Quickstart
 
@@ -170,11 +176,11 @@ make insight             # extraction ×3 + 5 artifacts → artifacts/
 
 ## Would this work on real data?
 
-Yes — and the change is narrower than it looks. The synthetic generator is a stand-in for an ingestion connector, nothing more. In production, HubSpot or Salesforce supplies leads and outcomes, and Marketo or Gong supplies touchpoints and call notes; a connector lands that data into the same five-table schema ICA already uses, or the warehouse equivalent of it.
+Yes — and I predict the change is narrower than it looks. The synthetic generator is a stand-in for an ingestion connector. In production, HubSpot or Salesforce supplies leads and outcomes, and Marketo or Gong/Attention supplies touchpoints and call notes; a connector lands that data into the same five-table schema ICA already uses, or the warehouse equivalent of it.
 
-Everything above ingestion is source-agnostic by construction. The findings layer is plain SQL against that schema. The resonance extraction and the artifact generation read the same tables and care nothing about where the rows came from. So a connector that populates the schema makes the entire analysis pipeline — findings, extraction, artifacts, dashboard — run on production data unchanged. The synthetic-versus-real boundary is **one ingestion adapter, not a rewrite** — the kind of thing a GTM engineer builds in a sprint, not a quarter.
+Everything above ingestion is source-agnostic by construction. The findings layer is plain SQL against that schema. The resonance extraction and the artifact generation read the same tables and care nothing about where the rows came from. So a connector that populates the schema makes the entire analysis pipeline — findings, extraction, artifacts, dashboard — run on production data unchanged. The synthetic-versus-real boundary is **one ingestion adapter, not a rewrite**.
 
-On the output side, the artifacts already serialize to JSON, so they are ready to flow back into the systems they describe: campaign briefs into Marketo, nurture sequences into HubSpot, ICP refinements into Salesforce. The grey dashed paths in the architecture diagram are exactly those two adapter layers — ingestion in, activation out — and the pipeline between them is built and running today. The toy is one swap away from real.
+On the output side, the artifacts already serialize to JSON, so they are ready to flow back into the systems they describe: campaign briefs into Marketo, nurture sequences into HubSpot, ICP refinements into Salesforce. The grey dashed paths in the architecture diagram are those two adapter layers — ingestion in, activation out — and the pipeline between them is built and running today.
 
 ## What this is not
 
