@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-05-22T00:22:47+00:00",
+  "generated_at": "2026-05-22T01:10:05+00:00",
   "model": "claude-haiku-4-5-20251001",
   "snippets": 2736,
   "agreement": {
-    "overall": 0.922514619883041,
-    "matched": 2524,
+    "overall": 0.9407894736842105,
+    "matched": 2574,
     "total": 2736,
     "per_theme": {
       "compliance_security": {
-        "matched": 371,
+        "matched": 358,
         "total": 408,
-        "rate": 0.9093137254901961
+        "rate": 0.8774509803921569
       },
       "cross_team_alignment": {
-        "matched": 87,
+        "matched": 89,
         "total": 109,
-        "rate": 0.7981651376146789
+        "rate": 0.8165137614678899
       },
       "data_quality": {
-        "matched": 273,
+        "matched": 275,
         "total": 275,
-        "rate": 0.9927272727272727
+        "rate": 1.0
       },
       "forecasting_accuracy": {
         "matched": 253,
@@ -28,54 +28,54 @@
         "rate": 1.0
       },
       "manual_work_reduction": {
-        "matched": 534,
+        "matched": 486,
         "total": 541,
-        "rate": 0.9870609981515711
+        "rate": 0.8983364140480592
       },
       "onboarding_ramp": {
-        "matched": 191,
+        "matched": 190,
         "total": 213,
-        "rate": 0.8967136150234741
+        "rate": 0.892018779342723
       },
       "pipeline_attribution": {
-        "matched": 325,
+        "matched": 338,
         "total": 349,
-        "rate": 0.9312320916905444
+        "rate": 0.9684813753581661
       },
       "rep_efficiency": {
-        "matched": 247,
+        "matched": 343,
         "total": 345,
-        "rate": 0.7159420289855073
+        "rate": 0.9942028985507246
       },
       "tool_sprawl_consolidation": {
-        "matched": 243,
+        "matched": 242,
         "total": 243,
-        "rate": 1.0
+        "rate": 0.9958847736625515
       }
     }
   },
   "stability": {
     "runs": 3,
     "counted": 2736,
-    "unanimous_rate": 0.9879385964912281
+    "unanimous_rate": 0.9912280701754386
   },
   "per_persona": {
     "Mid-market RevOps Leader": [
       [
         "manual_work_reduction",
-        314
+        298
       ],
       [
         "pipeline_attribution",
-        147
+        153
       ],
       [
         "data_quality",
-        114
+        115
       ],
       [
         "tool_sprawl_consolidation",
-        105
+        100
       ],
       [
         "forecasting_accuracy",
@@ -83,55 +83,59 @@
       ],
       [
         "compliance_security",
-        43
+        42
+      ],
+      [
+        "rep_efficiency",
+        15
       ]
     ],
     "VP Sales at growth-stage SaaS": [
       [
         "rep_efficiency",
-        146
+        202
       ],
       [
         "forecasting_accuracy",
         136
       ],
       [
-        "manual_work_reduction",
-        127
-      ],
-      [
         "pipeline_attribution",
-        121
+        120
       ],
       [
-        "compliance_security",
-        30
+        "manual_work_reduction",
+        71
       ],
       [
         "cross_team_alignment",
-        27
+        28
+      ],
+      [
+        "compliance_security",
+        28
       ],
       [
         "tool_sprawl_consolidation",
-        9
+        11
       ]
     ],
     "Enterprise IT Buyer": [
       [
         "compliance_security",
-        267
+        259
       ],
       [
         "tool_sprawl_consolidation",
-        172
+        180
       ],
       [
         "data_quality",
-        114
+        115
       ],
       [
         "cross_team_alignment",
-        60
+        61
       ],
       [
         "forecasting_accuracy",
@@ -139,29 +143,29 @@
       ],
       [
         "pipeline_attribution",
-        15
+        14
       ],
       [
         "manual_work_reduction",
-        14
+        13
       ]
     ],
     "SMB Founder": [
       [
+        "rep_efficiency",
+        204
+      ],
+      [
         "onboarding_ramp",
-        191
+        190
       ],
       [
         "manual_work_reduction",
-        178
-      ],
-      [
-        "rep_efficiency",
-        129
+        104
       ],
       [
         "pipeline_attribution",
-        64
+        71
       ],
       [
         "data_quality",
@@ -169,15 +173,15 @@
       ],
       [
         "compliance_security",
-        31
+        30
       ],
       [
         "tool_sprawl_consolidation",
-        19
+        12
       ],
       [
         "cross_team_alignment",
-        1
+        2
       ]
     ]
   }

@@ -1,58 +1,77 @@
-# Multi-Touch Sequence Play: Podcast → Blog → Demo Path
+# High-Velocity Multi-Touch Sequence Play: Podcast → Blog → Demo Path
 
-> Leads who complete a podcast → blog → demo-request journey within 14 days close at 44% — more than 6× the dataset-wide rate of 7.1% — and self-identify around three recurring pain themes.
+> Leads who follow a podcast → blog → demo-request path within 14 days close at 44% — more than 6x the dataset-wide rate of 7.1% — making this the highest-leverage sequence to systematize and scale immediately.
 
-*Sequence Play — generated from Finding F3 by `claude-sonnet-4-6` on 2026-05-22T00:21:41+00:00.*
+*Sequence Play — generated from Finding F3 by `claude-sonnet-4-6` on 2026-05-22T01:09:05+00:00.*
 
-This 50-lead cohort closes at 44% versus a 7.1% baseline, representing a statistically meaningful signal worth systematically replicating. Buyer language from this segment clusters around three distinct but related pain themes: attribution opacity, forecast unreliability, and manual ops bottlenecks. The 14-day compression window suggests high intent velocity, meaning sequence timing and message specificity are critical levers. Building a nurture play that mirrors the organic journey — podcast-style audio/narrative content first, then analytical/proof content, then a friction-reduced demo path — should increase the volume of leads entering this high-converting corridor.
-
-## Identified Pain Themes (Grounded in Buyer Quotes)
-
-- THEME 1 — Attribution Opacity: Buyers cannot reconcile which campaigns are actually driving pipeline. Marketing reports numbers they distrust.
-- THEME 2 — Forecast Unreliability: Pipeline coverage looks adequate on paper but forecasts consistently miss. Buyers suspect stage-scoring is broken.
-- THEME 3 — Manual Ops Backlog: Lead routing and ops tasks are handled manually on a weekly cadence, creating a backlog that never clears.
+This 50-lead cohort closes at 44% versus a 7.1% baseline, representing a 6.2x conversion lift that is too large to treat as noise. The 14-day compression window signals high intent and self-directed education before the demo request, meaning these buyers arrive warm and pre-qualified. Buyer language in this segment clusters around three concrete pain themes — attribution opacity, forecast inaccuracy, and manual ops backlog — giving us precise message hooks for each touch. Systematizing this path as a deliberate sequence rather than an accidental one is the immediate priority.
 
 ## Sequence Architecture Overview
 
-A 5-touch, 14-day sequence mirroring the organic journey structure: narrative/audio-first (Days 1–3), analytical proof (Days 5–8), friction-reduced demo conversion (Days 10–14). Each touch maps to one of the three pain themes. The sequence is triggered by a qualifying blog engagement event (e.g., 60%+ scroll on a relevant post) following any podcast-sourced first touch.
+The play mirrors the organic path that produced the 44% close rate: a podcast listen triggers enrollment, a targeted blog asset deepens the pain narrative, and a frictionless demo-request CTA closes the loop — all within a 14-day window. Every touch is mapped to one of the three buyer pain themes surfaced in the quotes: attribution reconciliation, forecast accuracy, and manual routing backlog. Do not compress below 14 days or extend beyond it; the window itself appears to be a signal of buyer urgency.
 
-## Touch 1 — Day 1 | Channel: Email | Theme: Attribution Opacity
+## Touch 1 — Podcast Listen (Day 0): Trigger & Enroll
 
-Subject line angle: 'Which campaigns are actually working?' Body: Reference the podcast episode as the entry point to establish continuity. Lead with the attribution pain — frame the problem as a reconciliation gap between what marketing reports and what revenue teams can verify. CTA: Link to the blog post they engaged with, plus one additional related post on multi-touch attribution. Keep copy under 120 words. Personalization token: company name + industry if available.
+- TRIGGER: Prospect listens to ≥50% of a relevant podcast episode (use your podcast host's listener data or UTM-tagged show-notes links to fire the trigger).
+- ACTION: Enroll lead in this sequence automatically via your MAP. Tag with segment label 'podcast-initiated-high-intent'.
+- INTERNAL NOTE FOR REVOPS: Confirm podcast platform webhook or UTM capture is live before launching. If direct listen-data is unavailable, use show-notes link click as proxy trigger.
+- NO outbound touch on Day 0 — let the listen stand alone. Interrupting immediately undercuts the self-directed nature of this buyer's journey.
 
-## Touch 2 — Day 3 | Channel: LinkedIn DM or Email (rep-sent) | Theme: Attribution Opacity
+## Touch 2 — Email 1 (Day 2): Attribution Pain Hook
 
-Rep sends a short, conversational note referencing the blog content. Angle: 'Most teams I talk to can't answer which three campaigns closed their last five deals — is that true for your team too?' No hard CTA. Goal is a reply that confirms pain theme resonance. This touch should feel like a natural follow-up, not a pitch. If rep capacity is limited, this can be an automated email written in first-person rep voice with reply-to set to the assigned rep.
+- CHANNEL: Personalized 1:1-style email from the assigned AE or SDR.
+- SUBJECT LINE OPTION A: 'Which campaigns are actually working for you right now?'
+- SUBJECT LINE OPTION B: 'The attribution number your board asks about — can you reconcile it?'
+- BODY DIRECTION: Open by acknowledging the podcast topic. Pivot to the attribution reconciliation pain ('Marketing reports numbers I cannot reconcile'). Offer the blog post as a resource — do not pitch the product yet. Single CTA: link to the blog asset identified in Touch 3 below.
+- BLOG ASSET REQUIRED: Ops or content team must confirm a blog post exists that directly addresses multi-touch attribution clarity. If none exists, use the closest available asset and flag content gap to marketing this week.
 
-## Touch 3 — Day 5 | Channel: Email | Theme: Forecast Unreliability
+## Touch 3 — Blog Asset (Day 2–5): Forecast & Scoring Pain Layer
 
-Subject line angle: 'Pipeline looks fine. Forecast still misses. Here's why.' Body: Pivot to the second pain theme — stage-scoring integrity. Acknowledge that coverage metrics can look healthy while forecast accuracy remains poor, which is a stage-definition and scoring problem, not a volume problem. CTA: Link to a proof asset (case study, teardown post, or data sheet) that addresses forecast accuracy. If no asset exists for this theme specifically, flag to content team as a gap to fill within 30 days.
+- ASSET: A blog post addressing pipeline forecast accuracy and/or stage-scoring methodology. This is the content bridge that the 44%-close cohort consumed organically.
+- CONTENT TEAM ACTION THIS WEEK: Audit existing blog inventory for posts matching 'forecast accuracy,' 'pipeline coverage,' or 'lead scoring stages.' Tag the top candidate as the anchor asset for this sequence.
+- IN-CONTENT CTA: Embed a mid-post and end-of-post CTA to request a demo. CTA copy should reference the forecast pain directly, e.g., 'See how [Product] closes the gap between pipeline coverage and forecast accuracy.'
+- TRACKING: Ensure blog CTA clicks are tracked back to the sequence enrollment so attribution is clean end-to-end — this is table stakes given the buyer's stated frustration with unreconcilable attribution.
 
-## Touch 4 — Day 8 | Channel: Email | Theme: Manual Ops Backlog
+## Touch 4 — Email 2 (Day 5–7): Manual Ops Backlog Hook + Social Proof
 
-Subject line angle: 'Still routing leads by hand on Mondays?' Body: Address the ops backlog theme directly. Frame manual routing as a compounding problem — every week the backlog resets, speed-to-lead degrades, and attribution gaps widen. Connect all three pain themes as a system: bad attribution → bad scoring → manual workarounds → forecast miss. CTA: Offer a lightweight self-assessment or checklist (1-page PDF or interactive tool) that lets the buyer diagnose their own ops maturity. This lowers friction versus jumping straight to a demo ask.
+- CHANNEL: Email from AE/SDR, same thread as Touch 2 to preserve conversation context.
+- SUBJECT LINE OPTION: 'If your team is still routing leads by hand on Mondays…'
+- BODY DIRECTION: Reference the manual routing / ops backlog pain theme directly. Acknowledge that ops backlogs compound — the Monday routing pile doesn't clear because the upstream data isn't clean. Position the demo as a working session, not a sales call: 'We'll map your current routing logic and show you where the backlog originates.'
+- SOCIAL PROOF REQUIREMENT: Include one customer reference (case study snippet or logo) from a company with a similar ops profile. Do not fabricate — use only approved references from your existing library.
+- CTA: 'Book a 30-minute working session' — link directly to AE calendar, not a generic demo form.
 
-## Touch 5 — Day 10–14 | Channel: Email + LinkedIn | Theme: Conversion
+## Touch 5 — LinkedIn Touch (Day 8–10): Low-Friction Visibility
 
-Subject line angle: 'A 25-minute look at your specific setup — no deck, just your data.' Body: Make the demo ask specific and low-commitment. Reference the journey explicitly — they've engaged with the podcast, the blog, and now three emails — position the demo as the logical next step, not a cold pitch. Offer two specific time slots or a direct Calendly link. Emphasize that the session is scoped to their pain (attribution, forecasting, or routing — let them choose the focus in the booking form). If no response by Day 14, route to a lower-cadence nurture track rather than continuing high-frequency outreach.
+- CHANNEL: AE or SDR sends a LinkedIn connection request or message if not already connected.
+- MESSAGE DIRECTION: Reference the podcast episode by name. One sentence. No pitch. Example frame: 'Caught that you've been exploring [podcast topic] — happy to share what we're seeing from ops teams dealing with the same routing and forecast challenges.'
+- DO NOT duplicate the email pain hooks here — LinkedIn is a presence signal, not a pitch channel at this stage.
+- REVOPS NOTE: If your team uses a sales engagement tool (e.g., Outreach, Salesloft), build this as a manual LinkedIn task step, not an automated message, to preserve authenticity.
 
-## Trigger & Enrollment Logic (For RevOps to Configure)
+## Touch 6 — Email 3 / Breakup (Day 12–14): Demo Request or Exit
 
-- Enrollment trigger: Contact has a podcast-sourced first touch (UTM source = podcast or referral domain matches podcast host) AND has engaged with a blog post (60%+ scroll or 90+ seconds on page) within a 14-day window.
-- Exclusion criteria: Already in an active deal stage, already in another active sequence, or has requested demo independently (route directly to AE).
-- Rep assignment: Enroll under the assigned AE or SDR. If unassigned, route to SDR queue immediately — do not let sequence run without a named owner.
-- Sequence pause rule: Pause all touches if a reply is received or a meeting is booked. Resume only if meeting is not held within 5 business days.
+- CHANNEL: Final email in sequence. Keep it short — three sentences maximum.
+- SUBJECT LINE: 'Last note from me on this'
+- BODY DIRECTION: Acknowledge they've been doing their own research (podcast, blog). State plainly that you have a specific working session format built for ops teams dealing with attribution gaps and manual routing. Single CTA: demo booking link. If no response after Day 14, exit sequence and move to a lower-cadence nurture track — do not extend this sequence beyond the 14-day window that defines the cohort.
+- EXIT ACTION FOR REVOPS: Tag non-responders as 'podcast-blog-no-demo' for a separate re-engagement analysis in 60 days. Do not discard — this cohort's baseline intent is still above average.
 
-## Content & Asset Gaps to Resolve Before Launch
+## Enrollment Criteria & Exclusions
 
-- GAP 1: A proof asset (case study or data teardown) specifically addressing forecast accuracy and stage-scoring — needed for Touch 3.
-- GAP 2: A self-assessment tool or ops maturity checklist addressing manual routing — needed for Touch 4.
-- GAP 3: A booking form field that lets prospects select their primary pain focus (attribution / forecasting / routing) to enable AE prep before the demo call.
-- Owner suggestion: Assign content gaps to marketing with a 3-week SLA so sequence can launch in week 4.
+- ENROLL IF: Lead has a confirmed podcast listen or show-notes link click AND has visited the target blog post — both within a rolling 14-day window.
+- ENROLL IF: Lead submits a demo request after the blog visit but before sequence completion — fast-track directly to AE, skip remaining sequence touches.
+- EXCLUDE: Current customers, active opportunities already in late-stage pipeline, and any lead already enrolled in a conflicting nurture sequence.
+- SEGMENT SIZE BASELINE: The observed cohort is 50 leads. Expect initial enrollment to be small — optimize for conversion rate, not volume, in the first 30 days.
 
-## Success Metrics & Review Cadence
+## Measurement & Success Criteria
 
-- Primary metric: Demo-to-close rate for sequence-enrolled leads. Baseline target: approach the observed 44% close rate for the organic cohort.
-- Secondary metrics: Reply rate by touch (flag any touch below 3%), meeting held rate, and sequence completion rate.
-- Volume target: Identify how many net-new leads per month qualify for enrollment based on current podcast and blog traffic; set a realistic enrollment forecast before launch.
-- Review cadence: Pull sequence performance data at 30 days and 60 days. If close rate for sequence-enrolled leads is below 25% at 60 days, audit touch messaging against the three pain themes for drift.
+- PRIMARY METRIC: Demo-to-close rate for sequence-enrolled leads. Baseline to beat: 44% (observed cohort). Track at 30, 60, and 90 days post-launch.
+- SECONDARY METRICS: (1) Sequence completion rate by touch — identify which touch has the highest drop-off. (2) Time-to-demo-request from sequence enrollment — flag if average exceeds 14 days. (3) Blog asset engagement rate (scroll depth + CTA click rate) for leads in this sequence versus site average.
+- ATTRIBUTION REQUIREMENT: Every touch in this sequence must be tagged with a consistent UTM structure and sequence ID so the full path is reportable. Given that attribution opacity is the #1 stated pain of this buyer segment, running an untracked sequence would be a credibility failure.
+- REVOPS OWNER: Assign one RevOps owner to pull a sequence performance report at Day 30. Share findings with marketing and sales leadership before making any sequence modifications.
+
+## Dependencies & This-Week Actions
+
+- [ ] REVOPS: Build sequence in sales engagement tool with all 6 touches and enrollment trigger logic. Target: live within 5 business days.
+- [ ] REVOPS: Confirm podcast listen or show-notes UTM trigger is firing correctly and passing to MAP/CRM.
+- [ ] CONTENT/MARKETING: Identify and tag the anchor blog asset for Touch 3. If no suitable post exists, escalate as a content gap — a net-new post addressing forecast accuracy and stage scoring should be prioritized.
+- [ ] SALES ENABLEMENT: Brief AEs and SDRs on the three buyer pain themes (attribution reconciliation, forecast accuracy, manual routing backlog) so email personalization is consistent with the sequence intent.
+- [ ] REVOPS: Create the 'podcast-initiated-high-intent' segment tag in CRM and confirm it flows through to reporting dashboards.

@@ -1,48 +1,47 @@
-# Paid Ad Copy Variants: Manual-Work-Reduction Message for Mid-Market RevOps Persona
+# Mid-Market RevOps Paid Ad Copy Variants — Manual Work Reduction Message
 
-> The manual-work-reduction message closes Maya (mid-market RevOps) at 25% versus 2.9% for every other persona, with 100% of 313 free-text snippets from this segment independently corroborating the theme.
+> The manual-work-reduction message closes mid-market RevOps buyers (Maya persona) at 25% vs. 2.9% for all other personas, corroborated by 95% resonance labeling across 313 free-text snippets.
 
-*Ad Copy Variants — generated from Finding F2 by `claude-sonnet-4-6` on 2026-05-22T00:20:59+00:00.*
+*Ad Copy Variants — generated from Finding F2 by `claude-sonnet-4-6` on 2026-05-22T01:08:10+00:00.*
 
-The 25% close rate on manual-work-reduction for mid-market RevOps is 8.6x higher than the 2.9% baseline across all other personas, making this the single highest-leverage message-persona pairing in the dataset. Buyer language is strikingly consistent: respondents independently surfaced the same pain — hours lost to copy-paste list-building, admin crowding out real work, and the direct link between manual overhead and inability to scale. Claude's resonance pass labelling 100% of 313 free-text snippets as manual_work_reduction confirms this is not a sampling artifact. Ad copy should mirror the exact cognitive frame buyers already hold: time lost per week, the ops headcount tax, and the scaling ceiling — not generic efficiency language.
+With a 25% close rate on the manual-work-reduction message versus 2.9% across every other persona, this is not a marginal lift — it is a fundamentally different conversion dynamic exclusive to mid-market RevOps. Buyer language in this segment clusters tightly around three concrete pain points: admin hours consumed before campaigns launch, copy-paste workflows between tools, and ops headcount absorbed by non-strategic work. The 95% resonance label rate across 313 independent free-text snippets confirms this is not noise from a small seed set. Ad copy for this persona should mirror their own language — hours, list-building, admin — rather than abstract platform benefits.
 
-## Targeting Parameters (Apply to All Variants)
+## Usage Guidance for RevOps & Marketing
 
-- Job titles: Revenue Operations Manager, RevOps Lead, Marketing Operations Manager, Demand Gen Ops — mid-market tier (100–1,000 employees).
-- Channels: LinkedIn Sponsored Content (primary), Meta retargeting for site visitors matching persona.
-- Exclude: Enterprise accounts (>1,000 employees) and personas outside RevOps/MOps — the 2.9% close rate on other personas does not justify spend with this message.
+Run these variants against the Maya persona segment only (mid-market RevOps titles: RevOps Manager, Director of Revenue Operations, Marketing Ops Manager at companies 100–1,000 employees). Do not deploy to AE, VP Sales, or demand-gen personas — the message closes at 2.9% outside this segment and may actively underperform generic copy. Recommended channels: LinkedIn Sponsored Content (job-title + seniority targeting), retargeting audiences built from RevOps-tagged site visitors. Test all four variants in a 4-way split; optimize to demo-request conversion, not CTR.
 
-## Variant A — 'Hours Per Week' Hook (Direct Pain Quantification)
+## Variant 1 — Hours Framing (Lead with the time cost)
 
-- HEADLINE: Your ops team is spending hours a week on list-building. That's not ops work — that's admin.
-- BODY: Copy-pasting between tools before every campaign isn't a workflow. It's a tax on your team's time. [Product] pulls, syncs, and updates your lists automatically — so your ops folks can do the work that actually moves pipeline.
-- CTA: See how it works — book a 20-min demo.
-- CREATIVE DIRECTION: Static image. Show a spreadsheet with a red 'time lost' callout vs. a clean automated status view. No stock-photo people. Keep it tool-adjacent and credible to an ops buyer.
+- HEADLINE: Your Ops Team Didn't Sign Up to Copy-Paste for 12 Hours a Week
+- BODY: List-building. Status updates. Tool-to-tool data moves. If your two ops folks are spending more time on admin than on actual ops work, the problem isn't headcount — it's the workflow. [Product] eliminates the manual layer so your team works on what scales the business.
+- CTA: See how it works — book a 20-min demo
+- COPY RATIONALE: Mirrors the '12 hours a week on manual list-building' and 'two ops folks spend more time on admin' language verbatim from buyer quotes. Reframes the pain as a workflow problem, not a hiring problem — reducing objection that the solution is just adding headcount.
 
-## Variant B — 'Scaling Ceiling' Hook (Strategic Framing)
+## Variant 2 — Scaling Blocker Framing (Lead with the strategic cost)
 
-- HEADLINE: You can't scale a revenue team that runs on copy-paste.
-- BODY: When every list pull and every status update is manual, your ops capacity is the ceiling on your growth. [Product] eliminates the admin loop — so the same two-person ops team can support twice the campaigns without adding headcount.
-- CTA: See the time savings — get a personalized demo.
-- CREATIVE DIRECTION: Short looping video (6–10 sec). Show a 'before' state of tool-switching and a 'after' state of automated sync completing in seconds. No voiceover needed — on-screen text only for feed-scroll context.
+- HEADLINE: Manual Admin Is the Reason Your RevOps Team Can't Scale
+- BODY: Every list pull by hand. Every campaign status updated manually. Every report built from scratch. The work that should take minutes takes days — and your team's capacity to drive real revenue impact disappears into the queue. [Product] automates the admin so RevOps can do RevOps.
+- CTA: Book a demo — see the time reclaimed
+- COPY RATIONALE: Draws directly from the buyer quote about manual admin being 'what keeps us from scaling.' Positions the product as a strategic unlocker rather than a point tool, which is appropriate for a Director-level buyer who owns the scaling mandate.
 
-## Variant C — 'Real Work vs. Admin Work' Hook (Identity/Role Resonance)
+## Variant 3 — Specificity Framing (Lead with the exact broken workflow)
 
-- HEADLINE: Your ops team didn't sign up to be data entry clerks.
-- BODY: If your two ops folks spend more time on admin than on actual ops work, the problem isn't headcount — it's the manual overhead eating their week. [Product] automates the list-building, syncing, and status updates so your team gets back to the work that matters.
-- CTA: Reclaim your team's time — book a demo.
-- CREATIVE DIRECTION: Static image or carousel. Carousel option: Slide 1 — 'What your ops team is doing' (list of manual tasks). Slide 2 — 'What they should be doing' (strategic ops work). Slide 3 — CTA. Tone should feel like it was written by someone who has worked in ops, not by marketing.
+- HEADLINE: Stop Building Campaign Lists by Hand
+- BODY: Before a single email goes out, your team is already hours deep in copy-paste between tools. That's not a campaign problem — it's a data operations problem. [Product] connects your stack and pulls the right lists automatically, so your ops team starts on strategy, not spreadsheets.
+- CTA: End the copy-paste — get a demo
+- COPY RATIONALE: Uses the most concrete, specific pain point from buyer quotes ('copy-paste between tools,' 'before a single campaign goes out'). High specificity signals to the buyer that the ad is written for them, not a generic audience — expected to drive higher qualified CTR from RevOps titles.
 
-## Variant D — Social-Proof Hook (LinkedIn-Native Format)
+## Variant 4 — Social Proof / Pattern Interrupt Framing (LinkedIn-native tone)
 
-- HEADLINE: RevOps leaders are done doing it all by hand.
-- BODY: The manual admin — the list pulls, the tool-switching, the weekly copy-paste — is what's keeping ops teams from scaling. [Product] automates the work that shouldn't be manual in the first place. Mid-market RevOps teams use it to get hours back every week before a single campaign goes out.
-- CTA: Join them — see a 20-min demo.
-- CREATIVE DIRECTION: LinkedIn Thought Leader Ad format (if available) or Sponsored Content with a conversational first-person tone. This variant is designed to feel native to the LinkedIn feed where buyers in this segment are already encountering peer validation of this pain point.
+- HEADLINE: RevOps teams doing everything by hand — there's a better way
+- BODY: If your ops team is manually pulling lists, chasing status updates, and moving data between tools before every campaign — you're not alone. But you're also leaving real capacity on the table. [Product] was built to remove the manual layer from revenue operations. Less admin. More ops.
+- CTA: See [Product] in action — 20-min demo
+- COPY RATIONALE: Tone and structure mirrors the LinkedIn-native buyer quote ('The amount of manual admin my team eats every week is what keeps us from scaling. We do all of it by hand.'). The 'you're not alone' opener reduces shame/friction for buyers who may feel their process is uniquely broken. Optimized for LinkedIn feed where conversational copy outperforms formal ad copy.
 
-## A/B Test Priority & Success Metrics
+## A/B Test Setup Recommendation
 
-- RECOMMENDED TEST ORDER: Run Variant A and Variant C head-to-head first — both address the same pain but from different angles (quantified time loss vs. role identity). Winner advances against Variant B.
-- PRIMARY METRIC: Demo booking rate (not CTR — CTR will be inflated by curiosity clicks outside the target persona).
-- SECONDARY METRIC: Downstream close rate on demo-booked leads from this campaign. The 25% close rate is the benchmark; if paid-sourced leads from this message underperform it materially, investigate whether targeting is pulling in the right persona.
-- DO NOT OPTIMIZE FOR: Impressions or reach. The finding is persona-specific. Broad reach with this message will dilute performance given the 2.9% close rate outside this segment.
+- Primary metric: Demo request conversion rate (not CTR)
+- Secondary metric: Lead-to-opportunity rate for demo requests generated (to confirm downstream quality)
+- Minimum runtime: 2 weeks or 200 impressions per variant per day, whichever comes first
+- Audience lock: Mid-market RevOps persona only — do not allow algorithm to broaden targeting during test
+- Negative signal to watch: If any variant drives high CTR but low demo conversion, flag for copy review — may be attracting wrong seniority or company size

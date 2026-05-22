@@ -171,12 +171,41 @@ def _theme_menu() -> str:
     )
 
 
+# rep_efficiency snippets often cite manual work as the *cause* of lost
+# selling time; without this guidance, extraction mislabels them as
+# manual_work_reduction. Applies the taxonomy's goal-vs-symptom rule to the
+# (rep_efficiency, manual_work_reduction) bridge pair.
+REP_EFFICIENCY_DISAMBIGUATION = """\
+Theme disambiguation — rep_efficiency vs manual_work_reduction
+
+rep_efficiency
+    The pain is SELLING CAPACITY — how well, or how much, reps can sell.
+    Vocabulary: "call quality", "talk track", "selling time", "rep
+    productivity", "call coaching", "reps stuck on admin instead of selling".
+
+manual_work_reduction
+    The pain is THE MANUAL WORK ITSELF — copy-paste and by-hand tasks, with
+    no mention of reps, selling, or call quality.
+    Vocabulary: "list-building by hand", "manual data entry", "copy-paste
+    between tools", "ops backlog".
+
+Many snippets name both — a rep-productivity problem CAUSED by manual work
+(e.g. "rep productivity tanks when AEs do manual data entry instead of
+selling"). Tag these:
+    primary   = rep_efficiency        (the goal — selling capacity is what
+                                       the buyer ultimately cares about)
+    secondary = manual_work_reduction (the symptom — the manual cause)
+Tag a snippet primary manual_work_reduction only when the manual work is the
+whole point and reps / selling / call quality are not mentioned.
+"""
+
 EXTRACTION_SYSTEM = (
     "You label short GTM buyer-feedback snippets with the buyer's primary "
     "pain theme.\n\n"
     "Use EXACTLY these nine themes — return the snake_case id verbatim:\n"
     f"{_theme_menu()}\n\n"
     f"{MWR_VS_DATA_QUALITY_DISAMBIGUATION}\n"
+    f"{REP_EFFICIENCY_DISAMBIGUATION}\n"
     "For each snippet return its primary theme, and a secondary theme only "
     "if a distinct second theme is clearly and substantially present "
     "(otherwise null).\n\n"
