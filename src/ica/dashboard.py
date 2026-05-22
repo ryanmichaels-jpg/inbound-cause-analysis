@@ -109,6 +109,7 @@ Output: a single deployable Streamlit app rendering all five Findings,
 a segment explorer, and the reserved Actions slot.
 """
 
+import json
 import sqlite3
 from datetime import timedelta
 from pathlib import Path
@@ -133,13 +134,16 @@ _TABLES = ("leads", "touchpoints", "outcomes")
 _WON = Outcome.CLOSED_WON.value
 _BROAD_FUNNEL = "linkedin_q2_broad_funnel"
 _CW_COL = "Closed-won rate"
+_ARTIFACTS_DIR = Path("artifacts")
 
-# Visible everywhere a theme label is shown — the honesty discipline that keeps
-# the eventual signature-feature reveal credible (data-world.md §4).
+# Visible everywhere a theme label is shown — the honesty discipline behind the
+# signature feature (data-world.md §4): the dashboard's theme views use the
+# seed labels; the Actions tab shows how well CP4 extraction reproduces them.
 _THEME_NOTE = (
-    "Themes here are generation-time seed labels (`ground_truth_themes`), not "
-    "human-validated gold. LLM-extracted variants land with the signature-"
-    "feature update."
+    "Theme labels here are the generation-time seed labels "
+    "(`ground_truth_themes`). The CP4 resonance pass independently re-extracts "
+    "themes from the raw free text — see the Actions tab for how closely it "
+    "agrees."
 )
 
 _PERSONA_LABEL = {
@@ -446,19 +450,59 @@ def render_explore(data: dict) -> None:
     st.caption(_THEME_NOTE)
 
 
+def _artifact_label(path: Path) -> str:
+    """artifacts/F2_ad_copy_variants.md -> 'F2 — Ad Copy Variants'."""
+    finding, _, rest = path.stem.partition("_")
+    return f"{finding} — {rest.replace('_', ' ').title()}"
+
+
 def render_actions() -> None:
     st.subheader("GTM action artifacts")
-    st.info("Reserved for the signature feature — not yet built.")
-    st.markdown(
-        "This tab will surface **auto-generated GTM action artifacts**: content "
-        "briefs, ad-copy variants, and ICP refinements that Claude drafts from "
-        "the resonance themes ICA surfaces. It closes the loop from *insight* "
-        "(the findings in the other tabs) to *action* a GTM team can ship.\n\n"
-        "It lands with the signature-feature update, which also folds in the "
-        "CP4 resonance-extraction layer — replacing the seeded theme labels "
-        "used today with themes Claude extracts from the raw form answers and "
-        "sales notes."
+    st.caption(
+        "The signature feature — Claude re-extracts themes from the raw "
+        "free text (CP4), then drafts one GTM action artifact per finding. "
+        "Output is generated offline by `make insight` and committed."
     )
+
+    resonance_path = _ARTIFACTS_DIR / "resonance.json"
+    if not resonance_path.exists():
+        st.info(
+            "No artifacts found. Run `make insight` (needs `ANTHROPIC_API_KEY`) "
+            "to generate the resonance report and the five artifacts."
+        )
+        return
+
+    resonance = json.loads(resonance_path.read_text())
+    st.markdown("**Resonance extraction (CP4)**")
+    cols = st.columns(3)
+    cols[0].metric("Snippets extracted", f"{resonance['snippets']:,}")
+    cols[1].metric(
+        "Agreement vs seed labels", f"{resonance['agreement']['overall']:.1%}"
+    )
+    stability = resonance["stability"]["unanimous_rate"]
+    cols[2].metric(
+        "Cross-run stability", f"{stability:.1%}" if stability is not None else "n/a"
+    )
+    with st.expander("Full resonance report"):
+        st.markdown((_ARTIFACTS_DIR / "resonance.md").read_text())
+
+    st.divider()
+    st.markdown("**Recommended actions** — one artifact per finding, drafted "
+                "from the finding's numbers and real buyer quotes.")
+    artifacts = sorted(_ARTIFACTS_DIR.glob("F*.md"))
+    if not artifacts:
+        st.info("Resonance report present, but no artifact files found.")
+        return
+    chosen = st.selectbox("Artifact", artifacts, format_func=_artifact_label)
+    st.markdown(chosen.read_text())
+    json_path = chosen.with_suffix(".json")
+    if json_path.exists():
+        st.download_button(
+            "Download as JSON (campaign-tool ready)",
+            json_path.read_text(),
+            file_name=json_path.name,
+            mime="application/json",
+        )
 
 
 def main() -> None:
