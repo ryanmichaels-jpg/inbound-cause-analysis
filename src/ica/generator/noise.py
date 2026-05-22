@@ -105,24 +105,58 @@ existing ones.
 §4. SPURIOUS-PATTERN ENGINEERING — spurious.py
 ═════════════════════════════════════════════════════════════════════════
 
-Three planted false patterns, each with extreme rate × small N —
-the "tempting wrong finding" shape. They surface in naive
-aggregations; the pipeline's findings layer (which enforces an N
-threshold — see §4 discriminator) must NOT surface them.
+Three planted false patterns, each engineered as a "tempting wrong
+finding": small N + extreme rate + a slice a real GTM team would
+casually look at. Each has a `correlation_shape` — the naive
+aggregation that surfaces it — so the §6.2(c) discrimination test
+can confirm the pattern is genuinely findable before asserting the
+pipeline rejects it. Plant mechanics differ per pattern because
+Faker doesn't naturally generate .ai domains or 'urgent' form-text
+at the rates we need.
 
-  S1. "Tuesday signups close at 80%"
-      Pick 5 leads created on Tuesdays; flip outcomes to closed_won.
-      Naive by-day-of-week aggregation: 80% / Tuesday vs ~7%
-      baseline. Real N = 5.
+  S1. Tuesday signups close at 80%.
+      Shape: marginal close-rate by day-of-week.
+      Plant: select 5 leads from the natural Tuesday cohort
+      (~357 leads), scattered across personas, mid-band
+      ICP-fit-score (50-70 so firmographics don't carry the
+      signal); flip outcomes to closed_won.
+      Naive cell: Tue 80% / other days ~7%. N = 5.
+      Real-world echo: "concentrate campaign launches on Tuesday"
+      — a routine marketing-reporting slice.
 
-  S2. "Leads from .ai domains close at 75%"
-      8 leads with .ai-suffixed company domains; flip outcomes.
-      Naive by-tld aggregation: 75% / .ai vs ~7% baseline. N = 8.
+  S2. Leads from .ai domains close at 75%.
+      Shape: marginal close-rate by company-domain TLD.
+      Plant: select 8 leads, scatter personas, mid-band fit;
+      OVERWRITE company_domain to a `.ai` TLD (preserving the
+      person_email local-part so personas.py's email-derivation
+      invariant holds); flip outcomes.
+      Naive cell: .ai 75% / others ~7%. N = 8.
+      Real-world echo: ".ai = AI-native = ICP-fit AI-tooling
+      buyer" — niche TLDs genuinely correlate with industry in
+      real data.
 
-  S3. "Leads with 'urgent' in form-text close at 90%"
-      10 leads where form_text contains 'urgent'; flip outcomes.
-      Naive keyword-correlation: 90% / urgent vs ~7% baseline.
-      N = 10.
+  S3. Leads with 'urgent' in form-text close at 90%.
+      Shape: marginal close-rate by keyword-presence in form_text.
+      Plant: select 10 leads, scatter personas, mid-band fit;
+      APPEND the sentence "We need this resolved urgently — when
+      can we start?" to the END of an otherwise-normal form_text
+      (the rest of the buyer-language signal is preserved); flip
+      outcomes.
+      Naive cell: 'urgent' present 90% / absent ~7%. N = 10.
+      Real-world echo: high-intent language → conversion is a
+      real CRM correlation; the text angle adjoins the resonance
+      layer's logic, making the spurious look like a "discovered
+      theme."
+
+Scattering across personas (rather than concentrating in one) and
+mid-band ICP-fit (rather than top-band) deliberately removes the
+obvious confounds — the only thing differentiating the planted
+cohort from the rest is the spurious dimension itself. That's
+what makes each one a clean "tempting wrong finding."
+
+ORDERING: spurious-pattern injection runs as the LAST step of
+noise application — so S3's text injection survives intact rather
+than being chewed by `text_noise` (§2.2) that ran earlier.
 
 Public API (spurious.py):
   inject_spurious_patterns(leads, outcomes, *, rng)
@@ -278,12 +312,32 @@ pre-noise outputs. noise.py applies AFTER channels.py /
 journeys.py, so those unit tests test what they already tested.
 No change needed.
 
-§9.4 Dashboard robustness. The dashboard reads data/ica.db (noisy
-by default). Two implications: (a) headline metrics displayed will
-shift — most visibly resonance agreement / stability (Phase 2's
-job to refresh). (b) Is dashboard logic robust to nulls /
-Channel.UNKNOWN? Spot-check in Phase 3; if a widget crashes, fix
-in Phase 3.
+§9.4 Dashboard robustness — Phase 1 spot-check.
+At the end of Phase 1 (after default-noise lands and §6 tests
+pass), run `make dashboard` locally against the noisy DB and
+click each tab. What to look for:
+  - Findings tab — F1's channel-quality chart now includes a
+    Channel.UNKNOWN cohort (§2.4). Does it render or crash?
+  - Persona × Theme tab — Persona dropdown now includes OUTLIER
+    (§2.5). Outlier slice has N ~ 37; does the explorer render
+    coherent rows or div-by-zero on a percentage calc? Null
+    secondary themes already handled in v1.
+  - Resonance tab — some primary themes are now null (from
+    missingness on form_text, §2.1). Does the count widget
+    filter or crash?
+  - Actions tab — reads pre-generated artifacts (still v1 in
+    Phase 1; Phase 2 regenerates). No null exposure here.
+Trigger thresholds:
+  - PHASE 1 FIX (blocking): any tab raises a Python exception.
+    The Phase 1 contract is "default is realistic-noisy AND the
+    pipeline handles it" — a crashing dashboard means the system
+    isn't actually robust, so a crash blocks Phase 1 close.
+  - PHASE 3 DEFER (cosmetic): everything renders without
+    exception but looks rough (UNKNOWN as a stray unlabelled
+    bar, OUTLIER persona unlabeled, etc.). Document and defer.
+
+Headline metrics displayed (resonance agreement / stability) will
+also shift under noise — Phase 2's job to refresh.
 
 §9.5 Phase 2 numerics. The 94.1% agreement / 99.1% stability
 quoted in README + one-pager were v1 measurements. Phase 2
@@ -292,11 +346,23 @@ documentation in Phase 3. SURFACED ASSUMPTION: agreement plausibly
 lands 80–88%, stability 85–93% — but those are guesses; Phase 2
 measures.
 
-§9.6 Spurious-pattern manifest persistence. Written to
-data/spurious_manifest.json — needs a new line in .gitignore
-(currently only `data/*.db|sqlite|csv|parquet` are listed). Add
-`data/spurious_manifest.json` (or broaden to `data/*.json`).
-Discrimination test reads it; without it the test is vacuous.
+§9.6 Spurious-pattern manifest — definitions vs runtime record.
+Two artifacts, separate concerns:
+  - DEFINITIONS (which DOW, which TLD, which keyword, target N,
+    target rate) live in spurious.py as committed code —
+    reviewable, version-controlled, testable.
+  - RUNTIME RECORD (which specific lead_ids got planted with
+    which pattern in THIS generation run) is written to
+    data/spurious_manifest.json at generation time. Regenerable
+    from seed (deterministic), so gitignored — same logic as
+    data/ica.db. Needs a new .gitignore line:
+    `data/spurious_manifest.json` (or broaden to `data/*.json`).
+The §6.2 discrimination test reads data/spurious_manifest.json
+to learn (a) which lead_ids to look for in F1-F5 outputs (assert
+non-overlap) and (c) which planted slices to naive-aggregate
+(assert findable). Without the runtime record the test would have
+to re-plant the patterns itself, doubling the surface area for
+drift.
 
 §9.7 Duplicate semantics. Near-duplicates carry new lead_ids
 (uniqueness preserved, §6.4). But identity-pair joins on
@@ -315,8 +381,38 @@ breaks.
   (Phase 3).
 - One-pager numeric refresh (Phase 3, if Phase 2 results are
   material).
-- Dashboard null / Channel.UNKNOWN handling (Phase 3, only if §9.4
-  spot-check shows a crash).
+- Dashboard cosmetic polish for Channel.UNKNOWN / OUTLIER
+  labelling (Phase 3 — but crashes block Phase 1 close, see §9.4).
+
+═════════════════════════════════════════════════════════════════════════
+§11. PHASE 2 PRE-AGREED GATE — LLM re-extraction degradation rule
+═════════════════════════════════════════════════════════════════════════
+
+Documented now so the Phase 2 methodology numbers can't get
+rationalized after the fact. Mirrors the v1 → v2 rep_efficiency
+decision rule from commit 05b4ad1.
+
+When Phase 2 measures overall extraction agreement on the noisy
+dataset (the equivalent of v1's 94.1%):
+  - agreement > 80%    → accept; proceed normally. Methodology
+                         section quotes the new number plainly.
+  - agreement 75–80%   → proceed but flag explicitly in the
+                         methodology section. The README earns
+                         the "honest degradation under noise"
+                         frame rather than burying it.
+  - agreement < 75%    → pause and surface. Two diagnoses:
+                           (i)  noise overwhelms signal — re-tune
+                                in Phase 1 territory: dial back
+                                text_noise or missingness on text;
+                           (ii) extraction prompt needs hardening
+                                — v2 → v3 disambiguation iteration.
+                         One shot per remediation path, no spiral.
+
+The 75 / 80 thresholds are deliberate — v1 ran 94.1% on pristine
+text; the §9.5 surfaced range (80–88%) brackets the > 80%
+"accept" zone. 75–80% is the "honest but still useful" middle.
+< 75% is where the LLM stops being a credible signal extractor
+and the spend doesn't earn the dashboard's claim.
 
 ═════════════════════════════════════════════════════════════════════════
 END PHASE 1 PLANNING HEADER — paused for review per the v1.5 stop
