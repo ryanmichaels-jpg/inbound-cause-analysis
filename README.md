@@ -2,7 +2,7 @@
 
 > A root-cause analysis pipeline for inbound GTM — flipped from *"what to fix"* to *"what to amplify."* ICA reconstructs **why** inbound leads convert, then auto-drafts the GTM plays to do more of it.
 
-**Stack:** Python 3.11 · SQLite · Streamlit · Anthropic Claude (Haiku 4.5 + Sonnet 4.6) · 213 tests
+**Stack:** Python 3.11 · SQLite · Streamlit · Anthropic Claude (Haiku 4.5 + Sonnet 4.6) · 234 tests
 
 ---
 
@@ -150,7 +150,7 @@ git clone https://github.com/ryanmichaels-jpg/inbound-cause-analysis.git && cd i
 
 make install            # core + dev deps (generator + test suite)
 make generate           # build data/ica.db — deterministic, seed 42
-make test               # 213 tests, incl. the aha-pattern contract
+make test               # 234 tests, incl. the aha-pattern contract
 
 pip install -e ".[dashboard]"
 make dashboard           # Streamlit dashboard at localhost:8501
