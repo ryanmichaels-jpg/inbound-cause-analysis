@@ -10,13 +10,11 @@
 
 For most GTM teams, aside from a one-line 'attribution' CRM field, the inbound lead queue is a black box. As an SDR, some weeks it was full of real ICP buyers; some weeks it was consultants, competitors, or people who would never have budget. I'd work each lead the same way regardless, because aside from the (sometimes) enriched LinkedIn or company URL on the opportunity, nothing told me which leads were which - or, more importantly, why the good ones were showing up in the first place & how we could produce more of them
 
-The reporting on either side of me did not close that gap. I was siloed inbetween Marketing and Account Executives.
+The reporting on either side of me did not close that gap. I was siloed inbetween Marketing and Account Executives. Marketing reported MQLs at the top of the funnel; sales reported closed-won at the bottom. 
 
-Marketing reported MQLs at the top of the funnel; sales reported closed-won at the bottom. 
+The question in the middle — *which* messages, channels, and journeys actually produced revenue, and which just produced volume — never had an owner, so it never had an answer.
 
-The question in the middle — *which* messages, channels, and journeys actually produced revenue, and which just produced volume — never had an owner, so it never had an answer. Every quarter the pipeline review asked it, and every quarter was a shrug and a confident-sounding guess.
-
-Most GTM teams respond to that gap by optimizing tactics: shuffling the channel mix, A/B testing, rewriting lead-routing rules. ICA is built on the opposite bet. Tuning tactics in isolation chases noise. I've hypothesized that the higher-leverage move is to reconstruct *why* a lead raised their hand in the first place, cluster those reasons across thousands of leads, and then do deliberately more of exactly what worked.
+Most GTM teams respond to that gap by optimizing tactics: shuffling the channel mix, A/B testing, and rewriting lead-routing rules. ICA is built on the opposite bet. Tuning tactics in isolation chases noise. I've hypothesized that the higher-leverage move is to reconstruct *why* a lead raised their hand in the first place, cluster those reasons across thousands of leads, and then do deliberately more of what worked.
 
 ICA is a root-cause analysis pipeline for inbound. 
 
