@@ -20,7 +20,7 @@ It runs end to end on synthetic data, so the whole project clones and runs in tw
 
 ## Demo
 
-- **Live dashboard:** _deploying — Streamlit Cloud link to follow._
+- **Live dashboard:** [inbound-cause-analysis.streamlit.app](https://inbound-cause-analysis.streamlit.app/) — the four-tab Streamlit app: every finding, a persona × theme explorer, and the generated artifacts.
 - **One-page summary:** [`docs/one-pager.pdf`](docs/one-pager.pdf) — the whole story in a 90-second skim.
 
 ## What it does
