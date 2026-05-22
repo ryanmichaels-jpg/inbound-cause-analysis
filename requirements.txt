@@ -1,0 +1,22 @@
+# requirements.txt — runtime dependencies for the Streamlit Cloud deployment.
+#
+# Streamlit Cloud installs from this file by default; it does NOT resolve the
+# [dashboard] optional-dependency extra in pyproject.toml. So this file restates
+# the dashboard's full runtime closure. Version floors mirror pyproject.toml.
+#
+# Python version (3.11) is selected in the Streamlit Cloud deploy wizard —
+# Streamlit Community Cloud does not read a runtime.txt, so none is committed.
+
+# Dashboard presentation layer
+streamlit>=1.30
+pandas>=2.0
+altair>=5.0        # imported directly by dashboard.py (also a streamlit dep)
+
+# Core generator deps — dashboard.py regenerates data/ica.db on first load
+faker>=24.0
+numpy>=1.26
+
+# The ica package itself: dashboard.py is served as the main script, but its
+# `from ica.generator...` / `from ica.taxonomy...` imports resolve against the
+# installed package, not sys.path. Builds the wheel via the hatchling backend.
+.
