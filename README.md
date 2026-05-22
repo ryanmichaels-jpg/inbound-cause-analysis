@@ -14,7 +14,7 @@ The reporting on either side of me did not close that gap. Marketing reported MQ
 
 Most GTM teams respond to that gap by optimizing tactics: shuffling the channel mix, A/B testing subject lines, rewriting lead-routing rules. ICA is built on the opposite bet. Tuning tactics in isolation chases noise. The higher-leverage move is to reconstruct *why* a lead raised their hand in the first place, cluster those reasons across thousands of leads, and then do deliberately more of exactly what worked.
 
-ICA is a root-cause analysis pipeline for inbound. It borrows the five-stage shape of a support-ticket RCA system (see [Credits](#credits)) but inverts the optimization function: an RCA pipeline finds what to **eliminate**; ICA finds what to **amplify** — and then writes the GTM artifacts a team can act on this week.
+ICA is a root-cause analysis pipeline for inbound. Where a traditional RCA finds what to eliminate, ICA finds what to amplify — and then writes the GTM artifacts a team can act on this week.
 
 It runs end to end on synthetic data, so the whole project clones and runs in two commands. But every layer above ingestion is source-agnostic — the same pipeline runs on real CRM data with a single adapter swapped, which is the difference between a demo and a system.
 
