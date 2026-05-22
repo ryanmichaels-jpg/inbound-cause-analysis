@@ -1,0 +1,60 @@
+{
+  "finding_id": "F4",
+  "artifact_type": "icp_refinement",
+  "generated_at": "2026-05-22T00:22:16+00:00",
+  "model": "claude-sonnet-4-6",
+  "title": "ICP Refinement Brief: linkedin_q2_broad_funnel Exclusion & Tightening Criteria",
+  "headline_insight": "The linkedin_q2_broad_funnel campaign's 80% bad-outcome share and mean ICP fit score of 37 (vs. 53 dataset-wide) signals the current targeting definition is pulling volume at the direct expense of pipeline quality.",
+  "rationale": "With 600 leads generated and 80% ending in disqualification, ghosting, or wrong-fit loss, approximately 480 leads consumed sales and ops capacity without producing revenue. The mean ICP fit of 37 sits 16 points below the dataset-wide average of 53, confirming this is a structural targeting problem, not a conversion or messaging problem. The buyer quotes from this segment, however, reveal a coherent pain cluster \u2014 manual ops overhead, forecast opacity, and cross-tool copy-paste workflows \u2014 suggesting real buyers do exist in this audience but are buried under a poorly scoped targeting layer. Tightening firmographic and technographic filters around that pain cluster should raise fit scores toward or above the 53 baseline while reducing wasted lead volume.",
+  "sections": [
+    {
+      "heading": "Problem Statement",
+      "body": "linkedin_q2_broad_funnel is the highest-volume campaign in the dataset (600 leads) but delivers an 80% bad-outcome rate and a mean ICP fit score of 37 \u2014 16 points below the dataset-wide mean of 53. Continuing to run broad targeting into this audience is a negative-ROI activity: it inflates lead counts while degrading pipeline quality and consuming disproportionate SDR and ops time on leads that will never close."
+    },
+    {
+      "heading": "Qualifying Pain Signals (Derived from Buyer Quotes in This Segment)",
+      "body": [
+        "MANUAL OPS OVERHEAD: Prospects reference ops team members spending majority of time on admin rather than strategic work \u2014 target companies where ops-to-revenue ratio suggests under-resourced teams (e.g., 1\u20132 ops FTEs supporting a sales org of 10+).",
+        "FORECAST COMMIT GAPS: Prospects describe recurring missed commit numbers with no post-mortem visibility \u2014 target companies with a VP/Director of Revenue Operations or Sales Operations title present, indicating they have felt the pain enough to hire for it.",
+        "CROSS-TOOL LIST-BUILDING WASTE: Prospects cite 12 hours/week on manual list-building via copy-paste between tools \u2014 target companies using 3+ sales/marketing tools in their stack (e.g., CRM + MAP + data enrichment tool) without a dedicated integration layer, identifiable via technographic signals."
+      ]
+    },
+    {
+      "heading": "Proposed ICP Exclusion Criteria (What to Remove from Targeting)",
+      "body": [
+        "Exclude companies with fewer than 10 people in sales or revenue-generating roles \u2014 the manual ops pain described requires a team large enough to feel coordination overhead.",
+        "Exclude industries or segments where ops infrastructure is typically centralized or outsourced (e.g., solo-founder SaaS, agencies under 20 headcount) \u2014 these profiles lack the internal ops friction the product addresses.",
+        "Exclude job titles that are purely individual contributors with no budget authority and no ops remit \u2014 the quotes indicate buyers who own the ops problem and feel the cost of it.",
+        "Exclude companies already using a known competing integration or automation platform in their stack (technographic exclusion) \u2014 these leads are likely already solving the pain and will ghost or disqualify on discovery."
+      ]
+    },
+    {
+      "heading": "Proposed ICP Inclusion Criteria (What to Tighten Toward)",
+      "body": [
+        "COMPANY SIZE: B2B companies with 50\u2013500 employees \u2014 large enough to have multi-tool stack complexity and ops overhead, small enough that manual workarounds are still the default solution.",
+        "TEAM STRUCTURE: Presence of a Revenue Operations, Sales Operations, or Demand Generation Ops function (1\u20133 FTEs) supporting a sales team of 10 or more \u2014 matches the 'two ops folks' profile in the quotes.",
+        "TECH STACK SIGNAL: Companies running a CRM (e.g., Salesforce, HubSpot) plus a MAP plus at least one outbound or data enrichment tool, without a visible automation or orchestration layer \u2014 indicates the copy-paste-between-tools problem is live.",
+        "BEHAVIORAL / INTENT SIGNAL: Accounts showing intent around topics like 'sales ops automation,' 'pipeline forecasting,' or 'RevOps tooling' in the 30 days prior to targeting \u2014 prioritizes in-market buyers over broad audience spray.",
+        "TITLE TARGETING: Director or VP level in Sales Ops, Revenue Ops, or Marketing Ops \u2014 these are the roles quoted describing the pain and are most likely to own the budget and the problem."
+      ]
+    },
+    {
+      "heading": "Recommended LinkedIn Campaign Adjustments",
+      "body": [
+        "Replace broad audience targeting with a layered audience: job function (Sales, Operations) + seniority (Manager, Director, VP) + company size (50\u2013500 employees) + at least one technographic or intent overlay if LinkedIn's matched audiences or a third-party integration supports it.",
+        "Add explicit exclusion lists: upload a suppression list of current customers, known wrong-fit verticals, and any accounts already disqualified from the broad funnel cohort to prevent re-targeting the same 80% bad-outcome pool.",
+        "Reduce campaign budget allocated to this audience until the refined targeting is validated \u2014 reallocate toward campaigns with ICP fit scores at or above 53 while the new criteria are tested.",
+        "Set a 30-day checkpoint: measure mean ICP fit score and bad-outcome share on the first 100 leads generated under the new criteria; target mean ICP fit \u2265 50 and bad-outcome share \u2264 55% as the minimum bar to continue scaling."
+      ]
+    },
+    {
+      "heading": "Success Metrics",
+      "body": [
+        "Primary: Mean ICP fit score for leads from this campaign rises from 37 toward the dataset-wide baseline of 53 within 60 days of refinement.",
+        "Primary: Bad-outcome share (disqualified + ghosted + wrong-fit lost) drops from 80% to below 55% on the refined cohort.",
+        "Secondary: Lead volume will likely decrease \u2014 this is expected and acceptable; do not use raw lead count as a success metric for this campaign going forward.",
+        "Secondary: SDR time-per-qualified-lead decreases as fewer unqualified leads enter the sequence."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "finding_id": "F2",
+  "artifact_type": "ad_copy_variants",
+  "generated_at": "2026-05-22T00:20:59+00:00",
+  "model": "claude-sonnet-4-6",
+  "title": "Paid Ad Copy Variants: Manual-Work-Reduction Message for Mid-Market RevOps Persona",
+  "headline_insight": "The manual-work-reduction message closes Maya (mid-market RevOps) at 25% versus 2.9% for every other persona, with 100% of 313 free-text snippets from this segment independently corroborating the theme.",
+  "rationale": "The 25% close rate on manual-work-reduction for mid-market RevOps is 8.6x higher than the 2.9% baseline across all other personas, making this the single highest-leverage message-persona pairing in the dataset. Buyer language is strikingly consistent: respondents independently surfaced the same pain \u2014 hours lost to copy-paste list-building, admin crowding out real work, and the direct link between manual overhead and inability to scale. Claude's resonance pass labelling 100% of 313 free-text snippets as manual_work_reduction confirms this is not a sampling artifact. Ad copy should mirror the exact cognitive frame buyers already hold: time lost per week, the ops headcount tax, and the scaling ceiling \u2014 not generic efficiency language.",
+  "sections": [
+    {
+      "heading": "Targeting Parameters (Apply to All Variants)",
+      "body": [
+        "Job titles: Revenue Operations Manager, RevOps Lead, Marketing Operations Manager, Demand Gen Ops \u2014 mid-market tier (100\u20131,000 employees).",
+        "Channels: LinkedIn Sponsored Content (primary), Meta retargeting for site visitors matching persona.",
+        "Exclude: Enterprise accounts (>1,000 employees) and personas outside RevOps/MOps \u2014 the 2.9% close rate on other personas does not justify spend with this message."
+      ]
+    },
+    {
+      "heading": "Variant A \u2014 'Hours Per Week' Hook (Direct Pain Quantification)",
+      "body": [
+        "HEADLINE: Your ops team is spending hours a week on list-building. That's not ops work \u2014 that's admin.",
+        "BODY: Copy-pasting between tools before every campaign isn't a workflow. It's a tax on your team's time. [Product] pulls, syncs, and updates your lists automatically \u2014 so your ops folks can do the work that actually moves pipeline.",
+        "CTA: See how it works \u2014 book a 20-min demo.",
+        "CREATIVE DIRECTION: Static image. Show a spreadsheet with a red 'time lost' callout vs. a clean automated status view. No stock-photo people. Keep it tool-adjacent and credible to an ops buyer."
+      ]
+    },
+    {
+      "heading": "Variant B \u2014 'Scaling Ceiling' Hook (Strategic Framing)",
+      "body": [
+        "HEADLINE: You can't scale a revenue team that runs on copy-paste.",
+        "BODY: When every list pull and every status update is manual, your ops capacity is the ceiling on your growth. [Product] eliminates the admin loop \u2014 so the same two-person ops team can support twice the campaigns without adding headcount.",
+        "CTA: See the time savings \u2014 get a personalized demo.",
+        "CREATIVE DIRECTION: Short looping video (6\u201310 sec). Show a 'before' state of tool-switching and a 'after' state of automated sync completing in seconds. No voiceover needed \u2014 on-screen text only for feed-scroll context."
+      ]
+    },
+    {
+      "heading": "Variant C \u2014 'Real Work vs. Admin Work' Hook (Identity/Role Resonance)",
+      "body": [
+        "HEADLINE: Your ops team didn't sign up to be data entry clerks.",
+        "BODY: If your two ops folks spend more time on admin than on actual ops work, the problem isn't headcount \u2014 it's the manual overhead eating their week. [Product] automates the list-building, syncing, and status updates so your team gets back to the work that matters.",
+        "CTA: Reclaim your team's time \u2014 book a demo.",
+        "CREATIVE DIRECTION: Static image or carousel. Carousel option: Slide 1 \u2014 'What your ops team is doing' (list of manual tasks). Slide 2 \u2014 'What they should be doing' (strategic ops work). Slide 3 \u2014 CTA. Tone should feel like it was written by someone who has worked in ops, not by marketing."
+      ]
+    },
+    {
+      "heading": "Variant D \u2014 Social-Proof Hook (LinkedIn-Native Format)",
+      "body": [
+        "HEADLINE: RevOps leaders are done doing it all by hand.",
+        "BODY: The manual admin \u2014 the list pulls, the tool-switching, the weekly copy-paste \u2014 is what's keeping ops teams from scaling. [Product] automates the work that shouldn't be manual in the first place. Mid-market RevOps teams use it to get hours back every week before a single campaign goes out.",
+        "CTA: Join them \u2014 see a 20-min demo.",
+        "CREATIVE DIRECTION: LinkedIn Thought Leader Ad format (if available) or Sponsored Content with a conversational first-person tone. This variant is designed to feel native to the LinkedIn feed where buyers in this segment are already encountering peer validation of this pain point."
+      ]
+    },
+    {
+      "heading": "A/B Test Priority & Success Metrics",
+      "body": [
+        "RECOMMENDED TEST ORDER: Run Variant A and Variant C head-to-head first \u2014 both address the same pain but from different angles (quantified time loss vs. role identity). Winner advances against Variant B.",
+        "PRIMARY METRIC: Demo booking rate (not CTR \u2014 CTR will be inflated by curiosity clicks outside the target persona).",
+        "SECONDARY METRIC: Downstream close rate on demo-booked leads from this campaign. The 25% close rate is the benchmark; if paid-sourced leads from this message underperform it materially, investigate whether targeting is pulling in the right persona.",
+        "DO NOT OPTIMIZE FOR: Impressions or reach. The finding is persona-specific. Broad reach with this message will dilute performance given the 2.9% close rate outside this segment."
+      ]
+    }
+  ]
+}
