@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<!-- Source for docs/one-pager.pdf. Render: Chromium headless, page.pdf(format=Letter,
+     print_background=true, prefer_css_page_size=true). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inbound Cause Analysis — one-pager</title>
+<style>
+  @page { size: letter; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #1f2733;
+    font-size: 10.4px;
+    line-height: 1.46;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page { width: 8.5in; min-height: 10.7in; display: flex; flex-direction: column; }
+
+  header { background: #162032; color: #fff; padding: 30px 46px 26px; }
+  .eyebrow { font-size: 8.5px; letter-spacing: 3px; color: #4fd1c5;
+             font-weight: 700; text-transform: uppercase; }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin: 7px 0 6px; }
+  .subtitle { font-size: 11.5px; color: #aeb8c7; font-weight: 400; max-width: 6.4in; }
+  .subtitle em { color: #fff; font-style: normal; font-weight: 600; }
+
+  main { flex: 1; padding: 20px 46px 0; }
+
+  .lede { font-size: 11px; line-height: 1.5; color: #36404f; margin-bottom: 18px; }
+  .lede b { color: #0d9488; }
+
+  .section-label {
+    font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    font-weight: 700; color: #162032; border-bottom: 2px solid #0d9488;
+    padding-bottom: 4px; margin-bottom: 10px;
+  }
+  .section-label span { color: #8a93a3; font-weight: 600; letter-spacing: 1px; }
+
+  .row { display: flex; align-items: flex-start; gap: 12px; padding: 6.5px 0; }
+  .row + .row { border-top: 1px solid #edf0f3; }
+  .chip {
+    flex: 0 0 26px; height: 26px; background: #0d9488; color: #fff;
+    border-radius: 5px; font-weight: 800; font-size: 10.5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .body { flex: 1; }
+  .body .name { font-weight: 700; color: #162032; }
+  .body .desc { color: #4b5563; }
+  .body .desc b { color: #1f2733; }
+  .stat {
+    flex: 0 0 auto; text-align: right; min-width: 58px;
+    font-weight: 800; font-size: 21px; color: #0d9488; line-height: 1;
+    padding-top: 2px;
+  }
+
+  .method {
+    background: #f4f6f8; border-left: 3px solid #0d9488;
+    padding: 11px 16px; margin: 16px 0 18px; font-size: 10.2px; color: #36404f;
+  }
+  .method b { color: #0d9488; }
+  .method .flow { color: #162032; font-weight: 700; }
+
+  .artifact { padding: 5px 0; display: flex; gap: 9px; }
+  .artifact + .artifact { border-top: 1px solid #edf0f3; }
+  .artifact .arrow { color: #0d9488; font-weight: 800; flex: 0 0 auto; }
+  .artifact .name { font-weight: 700; color: #162032; }
+  .artifact .desc { color: #4b5563; }
+
+  .why {
+    margin-top: 17px; background: #162032; color: #d7dde6;
+    padding: 14px 18px; border-radius: 6px; font-size: 10.6px; line-height: 1.5;
+  }
+  .why .h { color: #4fd1c5; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; font-size: 8.5px; display: block; margin-bottom: 5px; }
+  .why b { color: #fff; }
+
+  footer {
+    margin-top: 14px; padding: 11px 46px 16px; border-top: 1px solid #e5e7eb;
+    display: flex; justify-content: space-between; font-size: 8.7px; color: #8a93a3;
+  }
+  footer .repo { color: #0d9488; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">GTM Engineering &middot; Case Study</div>
+    <h1>Inbound Cause Analysis</h1>
+    <div class="subtitle">A root-cause analysis pipeline for inbound GTM &mdash;
+      flipped from <em>what to fix</em> to <em>what to amplify</em>.</div>
+  </header>
+
+  <main>
+    <p class="lede">GTM teams optimize tactics &mdash; channel mix, copy tests,
+      routing rules &mdash; and still cannot answer the question in the middle:
+      <b>which messages, channels, and journeys actually produced revenue.</b>
+      ICA reconstructs why inbound converts from 2,500 leads of synthetic CRM
+      data, then auto-drafts the GTM plays to do more of it.</p>
+
+    <div class="section-label">What it found <span>&mdash; five patterns in why inbound converts</span></div>
+
+    <div class="row">
+      <div class="chip">F1</div>
+      <div class="body">
+        <span class="name">Channel-quality surprise.</span>
+        <span class="desc"> Podcast leads close at <b>30%</b>; LinkedIn-paid leads
+          at <b>3%</b> &mdash; a quality gap that runs directly against volume.</span>
+      </div>
+      <div class="stat">10&times;</div>
+    </div>
+    <div class="row">
+      <div class="chip">F2</div>
+      <div class="body">
+        <span class="name">Message&ndash;persona resonance.</span>
+        <span class="desc"> A manual-work-reduction message closes mid-market
+          RevOps leaders at <b>25%</b> vs <b>2.9%</b> for every other persona.</span>
+      </div>
+      <div class="stat">8.7&times;</div>
+    </div>
+    <div class="row">
+      <div class="chip">F3</div>
+      <div class="body">
+        <span class="name">The winning journey.</span>
+        <span class="desc"> A podcast &rarr; organic-search &rarr; demo path within
+          14 days closes at <b>44%</b> against a <b>7.1%</b> baseline.</span>
+      </div>
+      <div class="stat">6.2&times;</div>
+    </div>
+    <div class="row">
+      <div class="chip">F4</div>
+      <div class="body">
+        <span class="name">ICP fit vs volume.</span>
+        <span class="desc"> The largest LinkedIn campaign carries an <b>80%</b>
+          bad-outcome share &mdash; mean ICP-fit score 37 against a dataset-wide 53.</span>
+      </div>
+      <div class="stat">80%</div>
+    </div>
+    <div class="row">
+      <div class="chip">F5</div>
+      <div class="body">
+        <span class="name">Compliance resonance.</span>
+        <span class="desc"> Enterprise IT buyers close at <b>18%</b> on a
+          compliance/security message &mdash; a lift over every other persona.</span>
+      </div>
+      <div class="stat">5.0&times;</div>
+    </div>
+
+    <div class="method">
+      <span class="flow">Synthetic data &rarr; 5 SQL findings &rarr; Claude resonance
+      extraction &rarr; Claude artifact generation &rarr; Streamlit dashboard.</span>
+      The LLM layer reads all 2,736 raw buyer-text snippets and re-derives the
+      themes independently &mdash; <b>94.1%</b> agreement with ground truth,
+      <b>99.1%</b> stable across three runs.
+    </div>
+
+    <div class="section-label">What it shipped <span>&mdash; five GTM action artifacts, one per finding</span></div>
+
+    <div class="artifact">
+      <span class="arrow">&rarr;</span>
+      <div><span class="name">Content brief</span>
+      <span class="desc">&mdash; a podcast-anchored &ldquo;Manual Ops Tax&rdquo;
+        campaign that replicates the channel that converts.</span></div>
+    </div>
+    <div class="artifact">
+      <span class="arrow">&rarr;</span>
+      <div><span class="name">Ad-copy variants</span>
+      <span class="desc">&mdash; four paid variants for the mid-market RevOps
+        persona, written in the buyers&rsquo; own language.</span></div>
+    </div>
+    <div class="artifact">
+      <span class="arrow">&rarr;</span>
+      <div><span class="name">Sequence play</span>
+      <span class="desc">&mdash; a six-touch, 14-day sequence that systematizes
+        the winning multi-touch journey.</span></div>
+    </div>
+    <div class="artifact">
+      <span class="arrow">&rarr;</span>
+      <div><span class="name">ICP refinement</span>
+      <span class="desc">&mdash; exclusion and inclusion criteria to stop the
+        broad-funnel campaign&rsquo;s wasted spend.</span></div>
+    </div>
+    <div class="artifact">
+      <span class="arrow">&rarr;</span>
+      <div><span class="name">Ad-copy variants</span>
+      <span class="desc">&mdash; four compliance-angle variants for the
+        enterprise IT persona.</span></div>
+    </div>
+
+    <div class="why">
+      <span class="h">Why it matters</span>
+      Most analytics stops at a dashboard: here is what happened, good luck.
+      ICA closes the loop &mdash; <b>every finding ends in a GTM artifact a team
+      can ship this week</b>, emitted as Markdown to read and JSON to route into
+      Marketo, HubSpot, or Salesforce. It runs on a deterministic synthetic
+      dataset and is one ingestion swap away from real CRM data. That loop
+      &mdash; analysis that ends in shipped action, not another dashboard
+      &mdash; is what a GTM Engineer who can build delivers.
+    </div>
+  </main>
+
+  <footer>
+    <span class="repo">github.com/ryanmichaels-jpg/inbound-cause-analysis</span>
+    <span>Python &middot; SQLite &middot; Streamlit &middot; Anthropic Claude &nbsp;|&nbsp; live dashboard deploying</span>
+  </footer>
+
+</div>
+</body>
+</html>
