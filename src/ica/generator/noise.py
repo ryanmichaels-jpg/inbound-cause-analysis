@@ -810,6 +810,11 @@ def _inject_outliers(
             first_touch_utm_campaign=None,
             is_outlier=True,
         )
+        # Whole-second precision matches the v1 timestamp convention the
+        # dashboard's pd.to_datetime relies on for format auto-inference.
+        # (Discovered via §9.4 spot-check: float-second outliers broke
+        # _f3_path_ids on the dashboard's load path.)
+        new_lead.created_at = new_lead.created_at.replace(microsecond=0)
         leads.append(new_lead)
         # Disqualified outcome — student_or_competitor matches the
         # taxonomy.DISQUALIFIED_SUB_REASONS tail real CRMs use for junk.
