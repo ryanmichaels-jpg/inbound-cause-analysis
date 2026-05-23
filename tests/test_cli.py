@@ -5,7 +5,7 @@ import pytest
 
 from ica import cli
 from ica.generator.seed import DEFAULT_DB_PATH
-from ica.taxonomy import DEFAULT_SEED
+from ica.taxonomy import CLEAN, DEFAULT_SEED, REALISTIC
 
 _FAKE_COUNTS = {
     "leads": 2500,
@@ -21,9 +21,10 @@ def captured_generate(monkeypatch):
     """Replace cli.generate with a stub that records its kwargs."""
     calls: dict[str, object] = {}
 
-    def _stub(seed, db_path):
+    def _stub(*, seed, db_path, noise_profile):
         calls["seed"] = seed
         calls["db_path"] = db_path
+        calls["noise_profile"] = noise_profile
         return _FAKE_COUNTS
 
     monkeypatch.setattr(cli, "generate", _stub)
@@ -34,12 +35,38 @@ def test_defaults_dispatch_to_generate(captured_generate):
     assert cli.main([]) == 0
     assert captured_generate["seed"] == DEFAULT_SEED
     assert captured_generate["db_path"] == DEFAULT_DB_PATH
+    # v1.5: default noise is REALISTIC.
+    assert captured_generate["noise_profile"] == REALISTIC
 
 
 def test_seed_and_db_path_flags(captured_generate):
     assert cli.main(["--seed", "7", "--db-path", "/tmp/ica_x.db"]) == 0
     assert captured_generate["seed"] == 7
     assert captured_generate["db_path"] == "/tmp/ica_x.db"
+
+
+# v1.5 noise-control tests --------------------------------------------------
+
+
+def test_clean_flag_uses_clean_profile(captured_generate):
+    assert cli.main(["--clean"]) == 0
+    assert captured_generate["noise_profile"] == CLEAN
+
+
+def test_noise_zero_uses_clean_profile(captured_generate):
+    assert cli.main(["--noise", "0"]) == 0
+    assert captured_generate["noise_profile"] == CLEAN
+
+
+def test_noise_multiplier_scales_realistic(captured_generate):
+    assert cli.main(["--noise", "2"]) == 0
+    assert captured_generate["noise_profile"] == REALISTIC.scaled(2.0)
+
+
+def test_clean_and_noise_are_mutually_exclusive(capsys):
+    # argparse exits with SystemExit(2) when mutually exclusive args clash.
+    with pytest.raises(SystemExit):
+        cli.main(["--clean", "--noise", "2"])
 
 
 @pytest.mark.parametrize(

@@ -5,6 +5,11 @@ docs/aha-patterns.md (per §3 of that doc: "the smoke-test assertion is the
 contract"). The thresholds are deliberately looser than the engineered
 targets so the contract survives reasonable seed variation. Two
 composition-invariant tests and one dataset-distribution test follow.
+
+v1.5: the dataset fixture applies default REALISTIC noise — this suite
+is the F1–F5 recovery contract under noise (DICTATED D2 of the v1.5 Phase
+1 planning header). Several thresholds were tuned looser than v1 per the
+§8 empirical step; the v1 -> v1.5 deltas are commented inline.
 """
 
 from collections import Counter
@@ -14,11 +19,14 @@ import pytest
 
 from ica.generator.channels import assign_channels
 from ica.generator.journeys import build_journeys
+from ica.generator.noise import apply_noise
 from ica.generator.outcomes import build_outcomes
 from ica.generator.personas import sample_personas
 from ica.taxonomy import (
+    DEFAULT_SEED,
     F3_PATH_WITHIN_DAYS,
     F4_TARGET_CAMPAIGN,
+    REALISTIC,
     Channel,
     EventType,
     Outcome,
@@ -29,11 +37,19 @@ from ica.taxonomy import (
 
 @pytest.fixture(scope="module")
 def dataset():
+    """v1.5: pristine generator output, then REALISTIC noise applied — the
+    same pipeline `seed.generate()` writes to disk. F1–F5 assertions run
+    against the post-noise dataset, mirroring what the dashboard sees."""
     leads = sample_personas()
     assign_channels(leads)
-    touchpoints, _ = build_journeys(leads)
-    outcomes, _ = build_outcomes(leads, touchpoints)
-    return leads, touchpoints, outcomes
+    touchpoints, form_submissions = build_journeys(leads)
+    outcomes, sales_notes = build_outcomes(leads, touchpoints)
+    lead_rows = [lead.to_lead() for lead in leads]
+    lead_rows, touchpoints, _form_submissions, _sales_notes, outcomes, _manifest = apply_noise(
+        lead_rows, touchpoints, form_submissions, sales_notes, outcomes,
+        profile=REALISTIC, seed=DEFAULT_SEED,
+    )
+    return lead_rows, touchpoints, outcomes
 
 
 def _won_rate(lead_ids, outcome_of):

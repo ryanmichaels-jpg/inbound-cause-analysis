@@ -116,6 +116,7 @@ from pathlib import Path
 
 from ica.generator.channels import assign_channels
 from ica.generator.journeys import build_journeys
+from ica.generator.noise import apply_noise
 from ica.generator.outcomes import build_outcomes
 from ica.generator.personas import sample_personas
 from ica.schema import (
@@ -126,7 +127,7 @@ from ica.schema import (
     insert_touchpoint,
     open_db,
 )
-from ica.taxonomy import DEFAULT_SEED
+from ica.taxonomy import DEFAULT_SEED, REALISTIC, NoiseProfile
 
 __all__ = ["DEFAULT_DB_PATH", "generate"]
 
@@ -134,13 +135,19 @@ DEFAULT_DB_PATH = "data/ica.db"
 
 
 def generate(
-    seed: int = DEFAULT_SEED, db_path: str = DEFAULT_DB_PATH
+    seed: int = DEFAULT_SEED,
+    db_path: str = DEFAULT_DB_PATH,
+    noise_profile: NoiseProfile = REALISTIC,
 ) -> dict[str, int]:
     """Run the full generator and write a fresh SQLite database.
 
     Wipes any existing file at `db_path`, rebuilds the five tables, and
     inserts every row in foreign-key order. Returns per-table row counts.
-    Deterministic in `seed`.
+    Deterministic in `seed` AND `noise_profile`.
+
+    v1.5: a noise profile is applied to the pristine v1 output before
+    persistence. Default = REALISTIC (the v1.5 noisy default per the
+    DICTATED contract); pass CLEAN for v1 pristine behavior.
     """
     # Generator chain: personas -> channels -> journeys -> outcomes.
     # content_library and copy_bank are static import banks used inside
@@ -155,6 +162,15 @@ def generate(
     touchpoints, form_submissions = build_journeys(leads, seed)
     outcomes, sales_notes = build_outcomes(leads, touchpoints, seed)
     lead_rows = [lead.to_lead() for lead in leads]
+
+    # v1.5: apply noise on the finalized Lead instances (post-to_lead). The
+    # noise layer can null fields the PartialLead.to_lead contract would
+    # have rejected (e.g., created_via_channel) — applying after to_lead
+    # keeps that contract intact for the pre-noise pipeline.
+    lead_rows, touchpoints, form_submissions, sales_notes, outcomes, _manifest = apply_noise(
+        lead_rows, touchpoints, form_submissions, sales_notes, outcomes,
+        profile=noise_profile, seed=seed,
+    )
 
     # Fresh DB — wipe and rebuild so a re-run never collides on a primary key.
     path = Path(db_path)

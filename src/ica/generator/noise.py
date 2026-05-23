@@ -415,6 +415,473 @@ text; the §9.5 surfaced range (80–88%) brackets the > 80%
 and the spend doesn't earn the dashboard's claim.
 
 ═════════════════════════════════════════════════════════════════════════
-END PHASE 1 PLANNING HEADER — paused for review per the v1.5 stop
-points. Implementation lands in the next commit after sign-off.
+END PHASE 1 PLANNING HEADER. Implementation follows.
+
+═════════════════════════════════════════════════════════════════════════
+IMPLEMENTATION NOTES — deviations from the planning header
+
+§2.4 / §2.5 / §5: the planning header proposed adding `Channel.UNKNOWN`
+and `Persona.OUTLIER` as new enum members. Implementation chose a less
+invasive path: `Lead.created_via_channel: Channel | None` (nullable) for
+the mis-attribution-null tail, and a new `Lead.is_outlier: bool` flag
+for outlier leads. The enum-expansion approach would have rippled into
+~20 parametrized tests in test_taxonomy.py with dict-key accesses
+(PERSONA_INDUSTRY_WEIGHTS[OUTLIER], CHANNEL_TARGET_VOLUME[UNKNOWN], …)
+that have no sensible zero/empty value. The schema-side approach is
+strictly more localized — two dataclass field changes + two DDL
+changes — for the same semantic outcome (mis-attributed leads are
+excluded from channel cohorts as None is excluded just as UNKNOWN
+would have been; outliers are taggable via the bool flag without an
+enum tag). Surfaced and documented in the Commit 1 message.
+
+§2.1: planning header described missingness as a two-rate dim (0.25 on
+qualitative text + 0.075 on demographics). Phase 1 implements text
+missingness only — demographic missingness would require either DDL
+nullability on company_industry / employee_count / revenue_band (more
+invasive) or sentinel values ("Unknown" / 0) that look broken in the
+dashboard. NoiseProfile.missingness is a single rate (text only) in
+Phase 1; demographic missingness is a Phase 2+ polish item.
+═════════════════════════════════════════════════════════════════════════
 """
+
+import re
+import string
+import uuid
+from collections.abc import Sequence
+from dataclasses import replace
+from datetime import timedelta
+
+import numpy as np
+
+from ica.schema import FormSubmission, Lead, OutcomeRow, SalesNote
+from ica.taxonomy import (
+    CHANNEL_TARGET_VOLUME,
+    DEFAULT_SEED,
+    REALISTIC,
+    Channel,
+    NoiseProfile,
+    Outcome,
+    Persona,
+    Seniority,
+    Theme,
+)
+
+__all__ = ["apply_noise"]
+
+# Fixed namespace so noise-generated lead_ids are reproducible across runs.
+_NOISE_LEAD_NAMESPACE = uuid.uuid5(uuid.NAMESPACE_DNS, "ica.v1_5_noise")
+
+# Order-stable sub-stream names — appending here doesn't reshuffle existing
+# streams (see §3 of the planning header).
+_NOISE_STREAMS: tuple[str, ...] = (
+    "missingness",
+    "text",
+    "duplicate",
+    "misattr",
+    "outlier",
+    "spurious",
+)
+
+
+def _spawn_streams(seed: int) -> dict[str, np.random.Generator]:
+    """Six independent RNGs, one per noise dimension. Tuning one dim does
+    NOT re-roll the others — same root seed, distinct child SeedSequences."""
+    ss = np.random.SeedSequence(seed)
+    children = ss.spawn(len(_NOISE_STREAMS))
+    return {
+        name: np.random.default_rng(s)
+        for name, s in zip(_NOISE_STREAMS, children, strict=True)
+    }
+
+
+# -----------------------------------------------------------------------------
+# §2.1 Missingness — null out qualitative free-text fields (text only in
+# Phase 1; see deviation note above).
+# -----------------------------------------------------------------------------
+
+
+def _apply_missingness(
+    form_submissions: list[FormSubmission],
+    sales_notes: list[SalesNote],
+    rate: float,
+    rng: np.random.Generator,
+) -> None:
+    """Per-row Bernoulli null on free-text fields. Mutates in place.
+
+    We use empty string "" as the null sentinel rather than changing the
+    DDL: the resonance layer reads these fields and treats empty as
+    no-signal, which is the meaningful realism here."""
+    if rate <= 0:
+        return
+    fs_mask = rng.random(len(form_submissions)) < rate
+    for fs, drop in zip(form_submissions, fs_mask, strict=True):
+        if drop:
+            fs.free_text_answer = ""
+    sn_mask = rng.random(len(sales_notes)) < rate
+    for sn, drop in zip(sales_notes, sn_mask, strict=True):
+        if drop:
+            sn.text = ""
+
+
+# -----------------------------------------------------------------------------
+# §2.2 Text noise — per-token mutation on free-text fields.
+# -----------------------------------------------------------------------------
+
+# Common-word abbreviation pool. Lookup is lower-case; replacement preserves
+# nothing of the original case (intentional — SMS-style chat noise).
+_ABBREVIATIONS: dict[str, str] = {
+    "you": "u",
+    "your": "ur",
+    "you're": "ur",
+    "are": "r",
+    "for": "4",
+    "to": "2",
+    "too": "2",
+    "be": "b",
+    "before": "b4",
+    "great": "gr8",
+    "later": "l8r",
+    "people": "ppl",
+    "thanks": "thx",
+    "with": "w/",
+    "without": "w/o",
+    "because": "bc",
+    "really": "rly",
+    "probably": "prob",
+    "okay": "ok",
+    "though": "tho",
+}
+_PUNCT_RE = re.compile(f"[{re.escape(string.punctuation)}]")
+# Per-op probabilities, normalized to sum=1. Order matches §2.2 of the header.
+_TEXT_OPS = ("swap", "drop", "abbrev", "strip", "case")
+_TEXT_OP_WEIGHTS = np.array([0.40, 0.20, 0.20, 0.10, 0.10])
+
+
+def _mutate_token(token: str, rng: np.random.Generator) -> str:
+    """Apply one of the five §2.2 ops to a single token."""
+    op = _TEXT_OPS[int(rng.choice(len(_TEXT_OPS), p=_TEXT_OP_WEIGHTS))]
+    if op == "swap" and len(token) >= 2:
+        i = int(rng.integers(0, len(token) - 1))
+        return token[:i] + token[i + 1] + token[i] + token[i + 2 :]
+    if op == "drop" and len(token) >= 2:
+        i = int(rng.integers(0, len(token)))
+        return token[:i] + token[i + 1 :]
+    if op == "abbrev":
+        return _ABBREVIATIONS.get(token.lower(), token)
+    if op == "strip":
+        return _PUNCT_RE.sub("", token)
+    if op == "case":
+        return token.upper() if rng.random() < 0.5 else token.lower()
+    return token  # ops that no-op on too-short tokens
+
+
+def _perturb_text(text: str, rate: float, rng: np.random.Generator) -> str:
+    """Per-token mutation with probability `rate` per token."""
+    if not text or rate <= 0:
+        return text
+    tokens = text.split(" ")
+    touched = rng.random(len(tokens)) < rate
+    return " ".join(
+        _mutate_token(tok, rng) if hit else tok
+        for tok, hit in zip(tokens, touched, strict=True)
+    )
+
+
+def _apply_text_noise(
+    form_submissions: list[FormSubmission],
+    sales_notes: list[SalesNote],
+    rate: float,
+    rng: np.random.Generator,
+) -> None:
+    if rate <= 0:
+        return
+    for fs in form_submissions:
+        fs.free_text_answer = _perturb_text(fs.free_text_answer, rate, rng)
+    for sn in sales_notes:
+        sn.text = _perturb_text(sn.text, rate, rng)
+
+
+# -----------------------------------------------------------------------------
+# §2.4 Mis-attribution — flip / null the channel attribution.
+# -----------------------------------------------------------------------------
+
+
+def _channel_mix_excluding(current: Channel | None) -> tuple[list[Channel], np.ndarray]:
+    """Channel choices + normalized probability vector for sampling a
+    replacement channel, excluding `current`."""
+    items = [(c, v) for c, v in CHANNEL_TARGET_VOLUME.items() if c != current]
+    channels = [c for c, _ in items]
+    weights = np.array([v for _, v in items], dtype=float)
+    weights /= weights.sum()
+    return channels, weights
+
+
+def _apply_mis_attribution(
+    leads: list[Lead], rate: float, rng: np.random.Generator
+) -> None:
+    """For each lead, with probability `rate`: 40% null the channel
+    (and clear the campaign), 60% flip to another channel drawn from the
+    overall mix. first_touch_utm_campaign is cleared in both cases — when
+    attribution is wrong, the campaign signal is wrong too."""
+    if rate <= 0:
+        return
+    hits = rng.random(len(leads)) < rate
+    flip_rolls = rng.random(len(leads))
+    for lead, hit, roll in zip(leads, hits, flip_rolls, strict=True):
+        if not hit:
+            continue
+        if roll < 0.40:
+            # null tail
+            lead.created_via_channel = None
+            lead.first_touch_utm_campaign = None
+        else:
+            # flip — sample replacement excluding current
+            channels, weights = _channel_mix_excluding(lead.created_via_channel)
+            idx = int(rng.choice(len(channels), p=weights))
+            lead.created_via_channel = channels[idx]
+            lead.first_touch_utm_campaign = None
+
+
+# -----------------------------------------------------------------------------
+# §2.3 Duplicates — inject near-duplicate leads.
+# -----------------------------------------------------------------------------
+
+_EMAIL_FORMAT_VARIANTS = ("flast", "f.last", "f_last", "lastf", "first_last", "last.first")
+
+
+def _alt_email(first: str, last: str, domain: str, variant: str) -> str:
+    """Return a near-duplicate email format. Helpers strip non-alnum the
+    way personas._person_email does."""
+    first_slug = re.sub(r"[^a-z0-9]", "", first.lower())
+    last_slug = re.sub(r"[^a-z0-9]", "", last.lower())
+    if variant == "flast":
+        local = first_slug[:1] + last_slug
+    elif variant == "f.last":
+        local = f"{first_slug[:1]}.{last_slug}"
+    elif variant == "f_last":
+        local = f"{first_slug[:1]}_{last_slug}"
+    elif variant == "lastf":
+        local = last_slug + first_slug[:1]
+    elif variant == "first_last":
+        local = f"{first_slug}_{last_slug}"
+    elif variant == "last.first":
+        local = f"{last_slug}.{first_slug}"
+    else:
+        local = f"{first_slug}.{last_slug}"
+    return f"{local}@{domain}"
+
+
+def _inject_duplicates(
+    leads: list[Lead],
+    outcomes: list[OutcomeRow],
+    rate: float,
+    seed: int,
+    rng: np.random.Generator,
+) -> None:
+    """Add round(rate * base_count) duplicates. Each carries a new lead_id
+    + outcome row, varied email format, slightly perturbed created_at, but
+    inherits everything else (channel, theme, outcome) from a parent.
+
+    Inheriting the parent's outcome preserves F1-F5 close-rate ratios
+    under duplicate dilution — duplicates don't shift the win-rate
+    aggregates, only the cohort sizes."""
+    base_count = len(leads)
+    n_dup = round(rate * base_count)
+    if n_dup <= 0:
+        return
+    outcome_by_lead = {o.lead_id: o for o in outcomes}
+    parent_indices = rng.integers(0, base_count, size=n_dup)
+    variant_indices = rng.integers(0, len(_EMAIL_FORMAT_VARIANTS), size=n_dup)
+    # Created-at jitter: -7..+7 days from the parent (seconds-resolution).
+    jitter_seconds = rng.integers(-7 * 86400, 7 * 86400 + 1, size=n_dup)
+
+    for i in range(n_dup):
+        parent = leads[parent_indices[i]]
+        variant = _EMAIL_FORMAT_VARIANTS[variant_indices[i]]
+        new_lead_id = str(uuid.uuid5(_NOISE_LEAD_NAMESPACE, f"dup:{seed}:{i}"))
+        new_email = _alt_email(parent.person_first_name, parent.person_last_name,
+                                parent.company_domain, variant)
+        new_created_at = parent.created_at + timedelta(seconds=int(jitter_seconds[i]))
+        new_lead = replace(parent, lead_id=new_lead_id, person_email=new_email,
+                            created_at=new_created_at)
+        leads.append(new_lead)
+        parent_outcome = outcome_by_lead.get(parent.lead_id)
+        if parent_outcome is not None:
+            new_outcome = replace(parent_outcome, lead_id=new_lead_id)
+            outcomes.append(new_outcome)
+
+
+# -----------------------------------------------------------------------------
+# §2.5 Outliers — junk leads (competitors / internal / spam).
+# -----------------------------------------------------------------------------
+
+_COMPETITOR_DOMAINS = (
+    "salesforce.com",
+    "hubspot.com",
+    "marketo.com",
+    "gong.io",
+    "outreach.io",
+    "clari.com",
+)
+_INTERNAL_DOMAINS = ("ica-corp.com", "ica-test.local")
+_JUNK_FIRST_NAMES = ("Test", "Asdf", "Qwerty", "Noreply", "Admin", "Spam")
+_JUNK_LAST_NAMES = ("User", "Bot", "Tester", "Account", "Sample", "Dummy")
+_JUNK_TITLES = (
+    "Competitive Intelligence Lead",
+    "Account Executive (Competitor)",
+    "Researcher",
+    "QA",
+    "Test Account",
+    "Student",
+)
+_JUNK_INDUSTRIES = ("SaaS", "Other", "Consumer")
+_THEME_POOL = list(Theme)
+_PERSONA_POOL = (Persona.MAYA, Persona.DAVID, Persona.PATRICIA, Persona.CARLOS)
+_CHANNEL_POOL = tuple(CHANNEL_TARGET_VOLUME.keys())
+_SENIORITY_POOL = tuple(Seniority)
+
+
+def _inject_outliers(
+    leads: list[Lead],
+    outcomes: list[OutcomeRow],
+    rate: float,
+    seed: int,
+    rng: np.random.Generator,
+) -> None:
+    """Add round(rate * base_count) junk leads. Each carries is_outlier=True,
+    a competitor or internal email domain, a low icp_fit_score, and a
+    DISQUALIFIED outcome. No touchpoints / form_submissions are emitted in
+    Phase 1 — outliers exist in the leads + outcomes tables and the
+    pipeline must handle them. The discrimination test (Commit 2) reads
+    the manifest to find them; an outlier-aware downstream LLM step is
+    a Phase 2 concern."""
+    base_count = len(leads)
+    n = round(rate * base_count)
+    if n <= 0:
+        return
+    # Sample arrays (faster than per-row .integers() calls).
+    is_competitor = rng.random(n) < 0.6  # 60% competitor, 40% internal
+    first_idx = rng.integers(0, len(_JUNK_FIRST_NAMES), size=n)
+    last_idx = rng.integers(0, len(_JUNK_LAST_NAMES), size=n)
+    title_idx = rng.integers(0, len(_JUNK_TITLES), size=n)
+    industry_idx = rng.integers(0, len(_JUNK_INDUSTRIES), size=n)
+    persona_idx = rng.integers(0, len(_PERSONA_POOL), size=n)
+    channel_idx = rng.integers(0, len(_CHANNEL_POOL), size=n)
+    seniority_idx = rng.integers(0, len(_SENIORITY_POOL), size=n)
+    theme_idx = rng.integers(0, len(_THEME_POOL), size=n)
+    competitor_d_idx = rng.integers(0, len(_COMPETITOR_DOMAINS), size=n)
+    internal_d_idx = rng.integers(0, len(_INTERNAL_DOMAINS), size=n)
+    icp_scores = rng.integers(5, 26, size=n)  # 5-25 inclusive
+    employee_counts = rng.integers(10, 5001, size=n)
+
+    # Anchor outlier created_at within the base time window — pull from
+    # the existing leads' min/max so they sit in the same envelope.
+    times = [lead.created_at for lead in leads]
+    t_min, t_max = min(times), max(times)
+    span = (t_max - t_min).total_seconds()
+    time_offsets = rng.random(n) * span
+
+    for i in range(n):
+        domain = (_COMPETITOR_DOMAINS[competitor_d_idx[i]] if is_competitor[i]
+                  else _INTERNAL_DOMAINS[internal_d_idx[i]])
+        first = _JUNK_FIRST_NAMES[first_idx[i]]
+        last = _JUNK_LAST_NAMES[last_idx[i]]
+        company_name = domain.split(".")[0].title()
+        new_lead_id = str(uuid.uuid5(_NOISE_LEAD_NAMESPACE, f"outlier:{seed}:{i}"))
+        new_lead = Lead(
+            lead_id=new_lead_id,
+            created_at=t_min + timedelta(seconds=float(time_offsets[i])),
+            person_first_name=first,
+            person_last_name=last,
+            person_email=f"{first.lower()}.{last.lower()}@{domain}",
+            person_title=_JUNK_TITLES[title_idx[i]],
+            person_seniority=_SENIORITY_POOL[seniority_idx[i]],
+            company_name=company_name,
+            company_domain=domain,
+            company_industry=_JUNK_INDUSTRIES[industry_idx[i]],
+            company_employee_count=int(employee_counts[i]),
+            company_revenue_band="<$10M",
+            persona=_PERSONA_POOL[persona_idx[i]],
+            icp_fit_score=int(icp_scores[i]),
+            created_via_channel=_CHANNEL_POOL[channel_idx[i]],
+            seed_label_theme_primary=_THEME_POOL[theme_idx[i]],
+            seed_label_theme_secondary=None,
+            first_touch_utm_campaign=None,
+            is_outlier=True,
+        )
+        leads.append(new_lead)
+        # Disqualified outcome — student_or_competitor matches the
+        # taxonomy.DISQUALIFIED_SUB_REASONS tail real CRMs use for junk.
+        outcomes.append(OutcomeRow(
+            lead_id=new_lead_id,
+            outcome=Outcome.DISQUALIFIED,
+            resolved_at=new_lead.created_at + timedelta(days=1),
+            days_to_outcome=1,
+            sub_reason="student_or_competitor",
+            pipeline_value_usd=None,
+        ))
+
+
+# -----------------------------------------------------------------------------
+# Public API
+# -----------------------------------------------------------------------------
+
+
+def apply_noise(
+    leads: Sequence[Lead],
+    touchpoints,
+    form_submissions: Sequence[FormSubmission],
+    sales_notes: Sequence[SalesNote],
+    outcomes: Sequence[OutcomeRow],
+    *,
+    profile: NoiseProfile = REALISTIC,
+    seed: int = DEFAULT_SEED,
+) -> tuple[list[Lead], list, list[FormSubmission], list[SalesNote], list[OutcomeRow], dict]:
+    """Apply the v1.5 noise profile to the pristine v1 dataset.
+
+    Returns mutated copies of all five table-equivalents plus the
+    spurious-pattern manifest. Phase 1 manifest is always empty (spurious
+    injection lands in Commit 2). The function does not mutate its
+    arguments — caller-owned copies are returned.
+
+    Order of application (per §3 of the planning header):
+        missingness → text_noise → mis_attribution → duplicate → outlier
+        → spurious (Commit 2)
+    Duplicates inherit already-noisy parent data (CRM-realistic). Outliers
+    carry their own pre-degraded payload — noise is not re-applied to
+    them.
+    """
+    streams = _spawn_streams(seed)
+
+    # Defensive copies — callers can keep their pristine lists if they want.
+    leads_l = list(leads)
+    touchpoints_l = list(touchpoints)
+    form_submissions_l = list(form_submissions)
+    sales_notes_l = list(sales_notes)
+    outcomes_l = list(outcomes)
+
+    # §2.1 missingness — text fields only.
+    _apply_missingness(form_submissions_l, sales_notes_l, profile.missingness,
+                       streams["missingness"])
+
+    # §2.2 text noise — runs after missingness so wasted ops are minimal
+    # (empty strings short-circuit in _perturb_text).
+    _apply_text_noise(form_submissions_l, sales_notes_l, profile.text_noise,
+                      streams["text"])
+
+    # §2.4 mis-attribution — flip/null created_via_channel.
+    _apply_mis_attribution(leads_l, profile.mis_attribution, streams["misattr"])
+
+    # §2.3 duplicates — inherit (already-noisy) parent state.
+    _inject_duplicates(leads_l, outcomes_l, profile.duplicate_rate, seed,
+                       streams["duplicate"])
+
+    # §2.5 outliers — own pre-degraded payload, appended last among the
+    # non-spurious dims so duplicate sampling can't pick them up as parents.
+    _inject_outliers(leads_l, outcomes_l, profile.outlier_rate, seed,
+                     streams["outlier"])
+
+    # §4 spurious patterns — Commit 2.
+    manifest: dict = {"patterns": []}
+
+    return leads_l, touchpoints_l, form_submissions_l, sales_notes_l, outcomes_l, manifest

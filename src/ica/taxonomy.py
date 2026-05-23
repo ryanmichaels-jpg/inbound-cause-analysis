@@ -757,3 +757,90 @@ PERSONA_THEME_SHARE: dict[Persona, dict[Theme, float]] = {
         Theme.CROSS_TEAM_ALIGNMENT: 0.00,
     },
 }
+
+
+# =============================================================================
+# Section 16 — v1.5 noise profiles (realistic-messy data layer)
+# =============================================================================
+# Used by ica.generator.noise.apply_noise() to mutate the pristine v1 dataset
+# into something the pipeline must work through. See
+# src/ica/generator/noise.py for the per-dimension semantics and the v1.5
+# Phase 1 planning header.
+
+from dataclasses import dataclass  # noqa: E402  (kept local to this section)
+
+
+@dataclass(frozen=True)
+class NoiseProfile:
+    """Per-dimension noise rates. All floats are probabilities in [0, 1]
+    (or unit-less integer counts for spurious_count). A profile with every
+    rate at zero is equivalent to v1 pristine behavior."""
+
+    # Per-row Bernoulli mask on qualitative free-text fields. v1.5 Phase 1
+    # applies only to FormSubmission.free_text_answer and SalesNote.text;
+    # demographic-field missingness is a Phase 2+ polish item.
+    missingness: float
+
+    # Per-token mutation probability on free-text fields.
+    text_noise: float
+
+    # Extra near-duplicate leads injected as a fraction of the base lead
+    # count (e.g., 0.08 -> 200 dups for 2,500 base leads).
+    duplicate_rate: float
+
+    # Per-lead Bernoulli rate for channel mis-attribution. On hit, 40% of
+    # the time created_via_channel becomes None (unknown source); 60% of
+    # the time it is flipped to another channel drawn from the overall
+    # channel volume mix. first_touch_utm_campaign is cleared either way.
+    mis_attribution: float
+
+    # Junk-lead injection as a fraction of the base lead count (e.g.,
+    # 0.015 -> 38 outliers). Outliers carry is_outlier=True, low icp_fit,
+    # competitor / internal email domains, and a DISQUALIFIED outcome.
+    outlier_rate: float
+
+    # Number of planted false correlations (read by ica.generator.spurious
+    # in Commit 2; ignored in Commit 1's noise.py).
+    spurious_count: int
+
+    def scaled(self, multiplier: float) -> "NoiseProfile":
+        """Return a new profile with every rate multiplied by `multiplier`.
+
+        Rates are clamped to [0, 1]; spurious_count is rounded. Used to
+        derive STRESS_2X / STRESS_4X from REALISTIC and to support the
+        --noise FLOAT CLI flag.
+        """
+        if multiplier < 0:
+            raise ValueError(f"noise multiplier must be >= 0, got {multiplier}")
+        return NoiseProfile(
+            missingness=min(self.missingness * multiplier, 1.0),
+            text_noise=min(self.text_noise * multiplier, 1.0),
+            duplicate_rate=self.duplicate_rate * multiplier,
+            mis_attribution=min(self.mis_attribution * multiplier, 1.0),
+            outlier_rate=self.outlier_rate * multiplier,
+            spurious_count=round(self.spurious_count * multiplier),
+        )
+
+
+# Named profiles. CLEAN is v1 pristine; REALISTIC is the v1.5 default;
+# STRESS_2X / STRESS_4X are derived for test_noise_tolerance.
+CLEAN: NoiseProfile = NoiseProfile(
+    missingness=0.0,
+    text_noise=0.0,
+    duplicate_rate=0.0,
+    mis_attribution=0.0,
+    outlier_rate=0.0,
+    spurious_count=0,
+)
+
+REALISTIC: NoiseProfile = NoiseProfile(
+    missingness=0.25,
+    text_noise=0.15,
+    duplicate_rate=0.08,
+    mis_attribution=0.12,
+    outlier_rate=0.015,
+    spurious_count=3,
+)
+
+STRESS_2X: NoiseProfile = REALISTIC.scaled(2.0)
+STRESS_4X: NoiseProfile = REALISTIC.scaled(4.0)

@@ -45,10 +45,16 @@ CREATE TABLE IF NOT EXISTS leads (
     company_revenue_band        TEXT NOT NULL,
     persona                     TEXT NOT NULL,
     icp_fit_score               INTEGER NOT NULL,
-    created_via_channel         TEXT NOT NULL,
+    -- v1.5: created_via_channel is nullable so the noise layer's
+    -- mis-attribution can set it to NULL (the "unknown source" tail
+    -- real CRMs carry). v1 generation always populates it.
+    created_via_channel         TEXT,
     seed_label_theme_primary    TEXT NOT NULL,
     seed_label_theme_secondary  TEXT,
-    first_touch_utm_campaign    TEXT
+    first_touch_utm_campaign    TEXT,
+    -- v1.5: outlier flag for junk leads (competitors, internal, spam).
+    -- Defaults to 0 so v1 leads remain unaffected.
+    is_outlier                  INTEGER NOT NULL DEFAULT 0
 );
 """
 
@@ -144,10 +150,15 @@ class Lead:
     company_revenue_band: str
     persona: Persona
     icp_fit_score: int
-    created_via_channel: Channel
+    # v1.5: created_via_channel is nullable post-noise so the mis-attribution
+    # dim can null it out. v1 / pre-noise generation always populates it.
+    created_via_channel: Channel | None
     seed_label_theme_primary: Theme
     seed_label_theme_secondary: Theme | None = None
     first_touch_utm_campaign: str | None = None
+    # v1.5: outlier flag set True by noise.py's outlier injection. False
+    # for every v1 lead and every base-generated v1.5 lead.
+    is_outlier: bool = False
 
 
 @dataclass
@@ -315,8 +326,9 @@ def _row_tuple(obj: Any) -> tuple:
 
 
 def insert_lead(conn: sqlite3.Connection, lead: Lead) -> None:
+    # 19 columns: see DDL_LEADS (v1.5 added is_outlier as the trailing column).
     conn.execute(
-        "INSERT INTO leads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO leads VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         _row_tuple(lead),
     )
 

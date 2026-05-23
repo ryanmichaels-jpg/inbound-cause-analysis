@@ -19,7 +19,9 @@ import sys
 
 from ica.generator.seed import DEFAULT_DB_PATH, generate
 from ica.taxonomy import (
+    CLEAN,
     DEFAULT_SEED,
+    REALISTIC,
     TIME_WINDOW_END,
     TIME_WINDOW_START,
     TOTAL_LEADS_DEFAULT,
@@ -46,6 +48,22 @@ def _build_parser() -> argparse.ArgumentParser:
         "--db-path",
         default=DEFAULT_DB_PATH,
         help=f"Output SQLite path (default: {DEFAULT_DB_PATH}).",
+    )
+    # v1.5 noise controls — --noise scales the REALISTIC profile by the
+    # given multiplier (1.0 = REALISTIC default, 2.0 = STRESS_2X, 0.0 =
+    # CLEAN). --clean is sugar for --noise 0; the two are mutually
+    # exclusive.
+    noise_group = parser.add_mutually_exclusive_group()
+    noise_group.add_argument(
+        "--noise",
+        type=float,
+        default=1.0,
+        help="Noise multiplier (default: 1.0 = REALISTIC; 0 = clean v1).",
+    )
+    noise_group.add_argument(
+        "--clean",
+        action="store_true",
+        help="Equivalent to --noise 0; preserves v1 pristine behavior.",
     )
     parser.add_argument(
         "--total-leads",
@@ -92,8 +110,23 @@ def main(argv: list[str] | None = None) -> int:
         print(_locked_knob_error(used_locked), file=sys.stderr)
         return 2
 
-    counts = generate(seed=args.seed, db_path=args.db_path)
-    print(f"Generated {args.db_path}  (seed {args.seed})")
+    # Resolve the noise profile from --noise / --clean. argparse already
+    # rejects passing both; --clean overrides --noise's default if set.
+    if args.clean:
+        profile = CLEAN
+        noise_label = "clean (v1 pristine)"
+    elif args.noise == 0.0:
+        profile = CLEAN
+        noise_label = "clean (--noise 0)"
+    elif args.noise == 1.0:
+        profile = REALISTIC
+        noise_label = "realistic (1.0x)"
+    else:
+        profile = REALISTIC.scaled(args.noise)
+        noise_label = f"realistic x {args.noise}"
+
+    counts = generate(seed=args.seed, db_path=args.db_path, noise_profile=profile)
+    print(f"Generated {args.db_path}  (seed {args.seed}, noise {noise_label})")
     for table, count in counts.items():
         print(f"  {table:<18}{count:>6}")
     return 0
