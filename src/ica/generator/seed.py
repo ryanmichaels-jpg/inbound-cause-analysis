@@ -112,6 +112,7 @@ Output: a populated `data/ica.db` with all five tables, plus a returned
 row-count summary.
 """
 
+import json
 from pathlib import Path
 
 from ica.generator.channels import assign_channels
@@ -129,9 +130,13 @@ from ica.schema import (
 )
 from ica.taxonomy import DEFAULT_SEED, REALISTIC, NoiseProfile
 
-__all__ = ["DEFAULT_DB_PATH", "generate"]
+__all__ = ["DEFAULT_DB_PATH", "DEFAULT_SPURIOUS_MANIFEST_PATH", "generate"]
 
 DEFAULT_DB_PATH = "data/ica.db"
+# v1.5: per-run record of which lead_ids got planted with which spurious
+# pattern. Regenerable from seed; gitignored. Read by the discrimination
+# test (Commit 3) so it knows what to look for.
+DEFAULT_SPURIOUS_MANIFEST_PATH = "data/spurious_manifest.json"
 
 
 def generate(
@@ -167,7 +172,7 @@ def generate(
     # noise layer can null fields the PartialLead.to_lead contract would
     # have rejected (e.g., created_via_channel) — applying after to_lead
     # keeps that contract intact for the pre-noise pipeline.
-    lead_rows, touchpoints, form_submissions, sales_notes, outcomes, _manifest = apply_noise(
+    lead_rows, touchpoints, form_submissions, sales_notes, outcomes, manifest = apply_noise(
         lead_rows, touchpoints, form_submissions, sales_notes, outcomes,
         profile=noise_profile, seed=seed,
     )
@@ -176,6 +181,12 @@ def generate(
     path = Path(db_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.unlink(missing_ok=True)
+
+    # v1.5: persist the spurious-pattern manifest alongside the DB so the
+    # discrimination test (which reads ica.db) can locate the planted
+    # lead_ids and the surface signals for each pattern.
+    manifest_path = path.parent / Path(DEFAULT_SPURIOUS_MANIFEST_PATH).name
+    manifest_path.write_text(json.dumps(manifest, indent=2))
 
     conn = open_db(str(path))
     try:

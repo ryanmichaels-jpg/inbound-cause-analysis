@@ -844,3 +844,10 @@ REALISTIC: NoiseProfile = NoiseProfile(
 
 STRESS_2X: NoiseProfile = REALISTIC.scaled(2.0)
 STRESS_4X: NoiseProfile = REALISTIC.scaled(4.0)
+
+# Findings-layer N-floor — any cohort below this is discarded before it
+# can be surfaced as a finding. The three v1.5 spurious patterns
+# (N=5/8/10) all sit below; the five F-findings (smallest cohort F3 at
+# ~50) all sit above. See noise.py §4 (discriminator) and the
+# test_noise_discrimination contract.
+FINDING_N_FLOOR: int = 30

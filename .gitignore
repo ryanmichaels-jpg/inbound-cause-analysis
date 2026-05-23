@@ -13,6 +13,7 @@ data/*.db
 data/*.sqlite
 data/*.csv
 data/*.parquet
+data/*.json
 
 # Env
 .env

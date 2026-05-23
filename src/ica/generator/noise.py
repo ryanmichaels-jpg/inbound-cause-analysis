@@ -453,6 +453,7 @@ from datetime import timedelta
 
 import numpy as np
 
+from ica.generator.spurious import inject_spurious_patterns
 from ica.schema import FormSubmission, Lead, OutcomeRow, SalesNote
 from ica.taxonomy import (
     CHANNEL_TARGET_VOLUME,
@@ -881,7 +882,12 @@ def apply_noise(
     _inject_outliers(leads_l, outcomes_l, profile.outlier_rate, seed,
                      streams["outlier"])
 
-    # §4 spurious patterns — Commit 2.
-    manifest: dict = {"patterns": []}
+    # §4 spurious patterns — LAST step per the planning header ORDERING
+    # note so S3's keyword injection survives any earlier text_noise pass.
+    patterns = inject_spurious_patterns(
+        leads_l, form_submissions_l, outcomes_l,
+        profile=profile, rng=streams["spurious"],
+    )
+    manifest: dict = {"patterns": patterns}
 
     return leads_l, touchpoints_l, form_submissions_l, sales_notes_l, outcomes_l, manifest
