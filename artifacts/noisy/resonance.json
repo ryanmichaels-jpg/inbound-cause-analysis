@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-05-25T14:04:17+00:00",
+  "model": "claude-haiku-4-5-20251001",
+  "snippets": 2039,
+  "qualitative_fields": {
+    "total_fields": 2736,
+    "empty_fields": 697,
+    "kept_fields": 2039,
+    "empty_rate": 0.2547514619883041,
+    "form_submissions": {
+      "total": 2500,
+      "empty": 636
+    },
+    "sales_notes": {
+      "total": 236,
+      "empty": 61
+    }
+  },
+  "agreement": {
+    "overall": 0.9440902403138793,
+    "matched": 1925,
+    "total": 2039,
+    "per_theme": {
+      "compliance_security": {
+        "matched": 278,
+        "total": 308,
+        "rate": 0.9025974025974026
+      },
+      "cross_team_alignment": {
+        "matched": 73,
+        "total": 85,
+        "rate": 0.8588235294117647
+      },
+      "data_quality": {
+        "matched": 208,
+        "total": 210,
+        "rate": 0.9904761904761905
+      },
+      "forecasting_accuracy": {
+        "matched": 196,
+        "total": 196,
+        "rate": 1.0
+      },
+      "manual_work_reduction": {
+        "matched": 349,
+        "total": 394,
+        "rate": 0.8857868020304569
+      },
+      "onboarding_ramp": {
+        "matched": 150,
+        "total": 160,
+        "rate": 0.9375
+      },
+      "pipeline_attribution": {
+        "matched": 238,
+        "total": 252,
+        "rate": 0.9444444444444444
+      },
+      "rep_efficiency": {
+        "matched": 252,
+        "total": 253,
+        "rate": 0.9960474308300395
+      },
+      "tool_sprawl_consolidation": {
+        "matched": 181,
+        "total": 181,
+        "rate": 1.0
+      }
+    }
+  },
+  "stability": {
+    "runs": 3,
+    "counted": 2036,
+    "unanimous_rate": 0.9921414538310412
+  },
+  "per_persona": {
+    "Mid-market RevOps Leader": [
+      [
+        "manual_work_reduction",
+        223
+      ],
+      [
+        "pipeline_attribution",
+        110
+      ],
+      [
+        "data_quality",
+        86
+      ],
+      [
+        "tool_sprawl_consolidation",
+        67
+      ],
+      [
+        "forecasting_accuracy",
+        47
+      ],
+      [
+        "compliance_security",
+        33
+      ],
+      [
+        "rep_efficiency",
+        17
+      ]
+    ],
+    "VP Sales at growth-stage SaaS": [
+      [
+        "rep_efficiency",
+        149
+      ],
+      [
+        "forecasting_accuracy",
+        103
+      ],
+      [
+        "pipeline_attribution",
+        88
+      ],
+      [
+        "manual_work_reduction",
+        46
+      ],
+      [
+        "cross_team_alignment",
+        25
+      ],
+      [
+        "compliance_security",
+        19
+      ],
+      [
+        "tool_sprawl_consolidation",
+        8
+      ]
+    ],
+    "Enterprise IT Buyer": [
+      [
+        "compliance_security",
+        203
+      ],
+      [
+        "tool_sprawl_consolidation",
+        137
+      ],
+      [
+        "data_quality",
+        87
+      ],
+      [
+        "cross_team_alignment",
+        48
+      ],
+      [
+        "forecasting_accuracy",
+        46
+      ],
+      [
+        "manual_work_reduction",
+        9
+      ],
+      [
+        "pipeline_attribution",
+        8
+      ]
+    ],
+    "SMB Founder": [
+      [
+        "onboarding_ramp",
+        150
+      ],
+      [
+        "rep_efficiency",
+        141
+      ],
+      [
+        "manual_work_reduction",
+        72
+      ],
+      [
+        "pipeline_attribution",
+        44
+      ],
+      [
+        "data_quality",
+        35
+      ],
+      [
+        "compliance_security",
+        23
+      ],
+      [
+        "tool_sprawl_consolidation",
+        12
+      ]
+    ]
+  }
+}
