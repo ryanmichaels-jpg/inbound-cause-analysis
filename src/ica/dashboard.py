@@ -264,7 +264,7 @@ def render_overview(data: dict) -> None:
         (
             "Finding 1 — Channel quality surprise",
             f"{_ratio(pod, lin):.0f}× closed-won gap",
-            f"Podcast converts at {pod:.0%} against LinkedIn paid at {lin:.0%}. "
+            f"Podcast converts at {pod:.0%} against LinkedIn paid at {lin:.1%}. "
             "The lowest-volume channel is the highest-value one.",
         ),
         (
