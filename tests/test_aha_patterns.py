@@ -228,5 +228,10 @@ def test_dataset_outcome_distribution(dataset):
     _, _, outcomes = dataset
     counts = Counter(o.outcome for o in outcomes)
     total = len(outcomes)
+    # CW rate ceiling 0.085 has ~0.5pp margin over REALISTIC v1.5 noise
+    # actuals (0.0818) — the +1.1pp bump above v1 clean (0.071) comes from
+    # the three spurious-pattern outcome-flips (23 forced CWs). Increasing
+    # spurious_count or the spurious cohort sizes would require widening
+    # this band.
     assert 0.060 <= counts[Outcome.CLOSED_WON] / total <= 0.085
     assert 0.21 <= counts[Outcome.GHOSTED] / total <= 0.28
