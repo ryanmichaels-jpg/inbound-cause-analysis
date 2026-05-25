@@ -268,17 +268,66 @@ class FindingContext:
 
 
 def load_snippets(conn: sqlite3.Connection) -> list[Snippet]:
+    """Load qualitative-text snippets for extraction.
+
+    v1.5 methodology change: rows whose text is NULL, empty, or
+    whitespace-only are skipped. v1 generation always populated these
+    fields; v1.5's missingness noise dimension (§2.1 of the v1.5
+    planning header) blanks ~25% of qualitative fields to the empty-
+    string sentinel. Sending those to the extraction LLM tests
+    "classify a blank field" — not "does signal survive noise" — and
+    would make the §11 agreement gate fire on a methodology artifact.
+
+    The dropped count is recoverable via count_qualitative_field_status()
+    for transparent reporting alongside the agreement number.
+    """
     snippets: list[Snippet] = []
     for sid, lead_id, text, themes in conn.execute(
         "SELECT submission_id, lead_id, free_text_answer, ground_truth_themes "
         "FROM form_submissions"
     ):
+        if not text or not text.strip():
+            continue
         snippets.append(Snippet(sid, "form", lead_id, text, tuple(json.loads(themes))))
     for sid, lead_id, text, themes in conn.execute(
         "SELECT note_id, lead_id, text, ground_truth_themes FROM sales_notes"
     ):
+        if not text or not text.strip():
+            continue
         snippets.append(Snippet(sid, "note", lead_id, text, tuple(json.loads(themes))))
     return snippets
+
+
+def count_qualitative_field_status(conn: sqlite3.Connection) -> dict:
+    """Counts of qualitative-text fields, partitioned into kept vs empty.
+
+    Used by build_resonance_report() so the resonance.md / .json output
+    can surface the missingness filter rate alongside the agreement
+    number — v1.5 transparency convention is to report
+    "agreement X% on N snippets after excluding Y% empty-text fields."
+
+    Empty here means NULL or whitespace-only — the v1.5 missingness
+    sentinel and any legitimate empty values v1 might have shipped.
+    """
+    def _split(table: str, col: str) -> tuple[int, int]:
+        total = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+        empty = conn.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE {col} IS NULL OR TRIM({col}) = ''"
+        ).fetchone()[0]
+        return total, empty
+
+    form_total, form_empty = _split("form_submissions", "free_text_answer")
+    note_total, note_empty = _split("sales_notes", "text")
+    total = form_total + note_total
+    empty = form_empty + note_empty
+    return {
+        "total_fields": total,
+        "empty_fields": empty,
+        "kept_fields": total - empty,
+        "empty_rate": empty / total if total else 0.0,
+        "form_submissions": {"total": form_total, "empty": form_empty},
+        "sales_notes": {"total": note_total, "empty": note_empty},
+    }
 
 
 def batch_snippets(snippets: list[Snippet], size: int) -> list[list[Snippet]]:
@@ -706,12 +755,27 @@ def render_artifact_markdown(artifact: dict) -> str:
 def render_resonance_markdown(report: dict) -> str:
     agreement = report["agreement"]
     stability = report["stability"]
-    lines = [
-        "# Resonance extraction report",
-        "",
+    field_status = report.get("qualitative_fields")
+    header_lines = [
         f"*CP4 resonance layer — `{report['model']}` over "
         f"{report['snippets']} free-text snippets, "
         f"generated {report['generated_at']}.*",
+    ]
+    # v1.5 transparency: when noise blanks qualitative fields, surface the
+    # filter rate alongside the agreement number. v1 reports (pre-v1.5)
+    # omit `qualitative_fields`; render falls back gracefully there.
+    if field_status:
+        header_lines += [
+            "",
+            f"*v1.5 methodology: empty-text fields excluded from extraction. "
+            f"{field_status['empty_fields']} of {field_status['total_fields']} "
+            f"qualitative fields ({field_status['empty_rate']:.1%}) were blank "
+            f"(noise-layer missingness) and skipped.*",
+        ]
+    lines = [
+        "# Resonance extraction report",
+        "",
+        *header_lines,
         "",
         "## Extraction vs seed labels",
         "",
@@ -765,6 +829,10 @@ def build_resonance_report(
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "model": model,
         "snippets": len(snippets),
+        # v1.5 reporting: pair the agreement number with the filter rate
+        # so reviewers see what fraction of qualitative fields were
+        # excluded by the empty-text filter (load_snippets).
+        "qualitative_fields": count_qualitative_field_status(conn),
         "agreement": agreement,
         "stability": stability,
         "per_persona": ranked,

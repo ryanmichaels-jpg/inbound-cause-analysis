@@ -2,12 +2,110 @@
 so these exercise the real batching / parsing / scoring / rendering logic
 with no network and no API key."""
 
+import sqlite3
+
 from ica import insight
 from ica.insight import Snippet
 
 
 def _snip(snippet_id, text, seed):
     return Snippet(snippet_id, "form", f"L-{snippet_id}", text, tuple(seed))
+
+
+def _make_qualitative_db() -> sqlite3.Connection:
+    """Minimal in-memory DB with the two qualitative tables load_snippets
+    reads. Covers NULL / empty / whitespace-only / real-content cases."""
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(
+        """
+        CREATE TABLE form_submissions (
+            submission_id       TEXT,
+            lead_id             TEXT,
+            free_text_answer    TEXT,
+            ground_truth_themes TEXT
+        );
+        CREATE TABLE sales_notes (
+            note_id             TEXT,
+            lead_id             TEXT,
+            text                TEXT,
+            ground_truth_themes TEXT
+        );
+        """
+    )
+    conn.executemany(
+        "INSERT INTO form_submissions VALUES (?, ?, ?, ?)",
+        [
+            ("f1", "L1", "real form text", '["data_quality"]'),
+            ("f2", "L2", "", '["manual_work_reduction"]'),
+            ("f3", "L3", "   ", '["rep_efficiency"]'),
+            ("f4", "L4", None, '["forecasting_accuracy"]'),
+        ],
+    )
+    conn.executemany(
+        "INSERT INTO sales_notes VALUES (?, ?, ?, ?)",
+        [
+            ("n1", "L1", "real note text", '["data_quality"]'),
+            ("n2", "L5", "", '["pipeline_attribution"]'),
+        ],
+    )
+    return conn
+
+
+# --- v1.5: empty-text filter on load + field-status reporting ----------------
+
+
+def test_load_snippets_skips_empty_null_and_whitespace_text():
+    """v1.5 methodology: only snippets with real content get loaded.
+    Empty-string and whitespace-only and NULL all get filtered."""
+    conn = _make_qualitative_db()
+    kept = insight.load_snippets(conn)
+    assert {s.snippet_id for s in kept} == {"f1", "n1"}
+    # Surviving snippets keep their seed_themes intact.
+    by_id = {s.snippet_id: s for s in kept}
+    assert by_id["f1"].seed_themes == ("data_quality",)
+    assert by_id["n1"].source == "note"
+
+
+def test_count_qualitative_field_status_partitions_total_kept_empty():
+    """The companion counter the resonance report uses to surface the
+    filter rate alongside the agreement number."""
+    conn = _make_qualitative_db()
+    status = insight.count_qualitative_field_status(conn)
+    assert status["total_fields"] == 6
+    assert status["empty_fields"] == 4  # f2, f3, f4, n2
+    assert status["kept_fields"] == 2  # f1, n1
+    assert abs(status["empty_rate"] - 4 / 6) < 1e-9
+    assert status["form_submissions"] == {"total": 4, "empty": 3}
+    assert status["sales_notes"] == {"total": 2, "empty": 1}
+
+
+def test_render_resonance_markdown_surfaces_v1_5_filter_rate():
+    """When the report carries `qualitative_fields`, the rendered
+    header reports the missingness filter rate so reviewers see it
+    next to the agreement number."""
+    report = {
+        "generated_at": "2026-05-25T00:00:00+00:00",
+        "model": "claude-haiku-4-5-20251001",
+        "snippets": 2052,
+        "qualitative_fields": {
+            "total_fields": 2736, "empty_fields": 684, "kept_fields": 2052,
+            "empty_rate": 0.25,
+            "form_submissions": {"total": 2500, "empty": 625},
+            "sales_notes": {"total": 236, "empty": 59},
+        },
+        "agreement": {"overall": 0.84, "matched": 1724, "total": 2052,
+                      "per_theme": {}},
+        "stability": {"runs": 3, "counted": 2052, "unanimous_rate": 0.96},
+        "per_persona": {},
+    }
+    md = insight.render_resonance_markdown(report)
+    assert "v1.5 methodology" in md
+    assert "684 of 2736" in md
+    assert "25.0%" in md
+    # Pre-v1.5 reports (no qualitative_fields key) must render unchanged.
+    legacy = {k: v for k, v in report.items() if k != "qualitative_fields"}
+    legacy_md = insight.render_resonance_markdown(legacy)
+    assert "v1.5 methodology" not in legacy_md
 
 
 def test_batch_snippets_splits_evenly_and_remainder():
