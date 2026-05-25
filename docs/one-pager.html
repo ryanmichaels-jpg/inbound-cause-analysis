@@ -97,7 +97,8 @@
       routing rules &mdash; and still cannot answer the question in the middle:
       <b>which messages, channels, and journeys actually produced revenue.</b>
       ICA reconstructs why inbound converts from 2,500 leads of synthetic CRM
-      data, then auto-drafts the GTM plays to do more of it.</p>
+      data <b>stress-tested against realistic CRM noise</b>, then auto-drafts
+      the GTM plays to do more of it.</p>
 
     <div class="section-label">What it found <span>&mdash; five patterns in why inbound converts</span></div>
 
@@ -105,28 +106,28 @@
       <div class="chip">F1</div>
       <div class="body">
         <span class="name">Channel-quality surprise.</span>
-        <span class="desc"> Podcast leads close at <b>30%</b>; LinkedIn-paid leads
-          at <b>3%</b> &mdash; a quality gap that runs directly against volume.</span>
+        <span class="desc"> Podcast leads close at <b>31%</b>; LinkedIn-paid leads
+          at <b>4.4%</b> &mdash; a quality gap that runs directly against volume.</span>
       </div>
-      <div class="stat">10&times;</div>
+      <div class="stat">7&times;</div>
     </div>
     <div class="row">
       <div class="chip">F2</div>
       <div class="body">
         <span class="name">Message&ndash;persona resonance.</span>
         <span class="desc"> A manual-work-reduction message closes mid-market
-          RevOps leaders at <b>25%</b> vs <b>2.9%</b> for every other persona.</span>
+          RevOps leaders at <b>26%</b> vs <b>4.7%</b> for every other persona.</span>
       </div>
-      <div class="stat">8.7&times;</div>
+      <div class="stat">5.5&times;</div>
     </div>
     <div class="row">
       <div class="chip">F3</div>
       <div class="body">
         <span class="name">The winning journey.</span>
         <span class="desc"> A podcast &rarr; organic-search &rarr; demo path within
-          14 days closes at <b>44%</b> against a <b>7.1%</b> baseline.</span>
+          14 days closes at <b>39%</b> against an <b>8.2%</b> baseline.</span>
       </div>
-      <div class="stat">6.2&times;</div>
+      <div class="stat">5&times;</div>
     </div>
     <div class="row">
       <div class="chip">F4</div>
@@ -141,18 +142,20 @@
       <div class="chip">F5</div>
       <div class="body">
         <span class="name">Compliance resonance.</span>
-        <span class="desc"> Enterprise IT buyers close at <b>18%</b> on a
+        <span class="desc"> Enterprise IT buyers close at <b>21%</b> on a
           compliance/security message &mdash; a lift over every other persona.</span>
       </div>
-      <div class="stat">5.0&times;</div>
+      <div class="stat">4&times;</div>
     </div>
 
     <div class="method">
-      <span class="flow">Synthetic data &rarr; 5 SQL findings &rarr; Claude resonance
-      extraction &rarr; Claude artifact generation &rarr; Streamlit dashboard.</span>
-      The LLM layer reads all 2,736 raw buyer-text snippets and re-derives the
-      themes independently &mdash; <b>94.1%</b> agreement with ground truth,
-      <b>99.1%</b> stable across three runs.
+      <span class="flow">Synthetic data + v1.5 noise layer &rarr; 5 SQL findings &rarr;
+      Claude resonance extraction &rarr; Claude artifact generation &rarr; Streamlit
+      dashboard.</span> The LLM layer reads 2,039 buyer-text snippets (25.5%
+      empty-text filtered as missingness) and re-derives the themes independently
+      under noise &mdash; <b>94.4%</b> agreement with ground truth (clean baseline:
+      94.1%), <b>99.2%</b> stable across three runs. Verified against a pre-committed
+      &gt;80% acceptance gate.
     </div>
 
     <div class="section-label">What it shipped <span>&mdash; five GTM action artifacts, one per finding</span></div>
@@ -172,7 +175,7 @@
     <div class="artifact">
       <span class="arrow">&rarr;</span>
       <div><span class="name">Sequence play</span>
-      <span class="desc">&mdash; a six-touch, 14-day sequence that systematizes
+      <span class="desc">&mdash; a five-touch, 14-day sequence that systematizes
         the winning multi-touch journey.</span></div>
     </div>
     <div class="artifact">
@@ -197,12 +200,14 @@
       dataset and is one ingestion swap away from real CRM data. That loop
       &mdash; analysis that ends in shipped action, not another dashboard
       &mdash; is what a GTM Engineer who can build delivers.
+      <b>And every claim above has been re-verified after the dataset was
+      deliberately corrupted with realistic CRM noise.</b>
     </div>
   </main>
 
   <footer>
     <span class="repo">github.com/ryanmichaels-jpg/inbound-cause-analysis</span>
-    <span>Python &middot; SQLite &middot; Streamlit &middot; Anthropic Claude &nbsp;|&nbsp; live dashboard deploying</span>
+    <span>Python &middot; SQLite &middot; Streamlit &middot; Anthropic Claude &nbsp;|&nbsp; inbound-cause-analysis.streamlit.app</span>
   </footer>
 
 </div>
