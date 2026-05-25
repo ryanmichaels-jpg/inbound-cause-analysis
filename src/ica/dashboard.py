@@ -134,7 +134,7 @@ _TABLES = ("leads", "touchpoints", "outcomes")
 _WON = Outcome.CLOSED_WON.value
 _BROAD_FUNNEL = "linkedin_q2_broad_funnel"
 _CW_COL = "Closed-won rate"
-_ARTIFACTS_DIR = Path("artifacts")
+_ARTIFACTS_DIR = Path("artifacts/noisy")
 
 # Visible everywhere a theme label is shown — the honesty discipline behind the
 # signature feature (data-world.md §4): the dashboard's theme views use the
@@ -451,7 +451,7 @@ def render_explore(data: dict) -> None:
 
 
 def _artifact_label(path: Path) -> str:
-    """artifacts/F2_ad_copy_variants.md -> 'F2 — Ad Copy Variants'."""
+    """artifacts/noisy/F2_ad_copy_variants.md -> 'F2 — Ad Copy Variants'."""
     finding, _, rest = path.stem.partition("_")
     return f"{finding} — {rest.replace('_', ' ').title()}"
 
@@ -461,7 +461,9 @@ def render_actions() -> None:
     st.caption(
         "The signature feature — Claude re-extracts themes from the raw "
         "free text (CP4), then drafts one GTM action artifact per finding. "
-        "Output is generated offline by `make insight` and committed."
+        "Showing the v1.5 noisy-data run (the clean-data v1 reference set "
+        "lives at `artifacts/` in the repo). Generated offline by "
+        "`make insight` and committed."
     )
 
     resonance_path = _ARTIFACTS_DIR / "resonance.json"
