@@ -150,7 +150,7 @@ from ica.taxonomy import (
 EXTRACTION_MODEL = "claude-haiku-4-5-20251001"
 ARTIFACT_MODEL = "claude-sonnet-4-6"
 
-DEFAULT_OUT_DIR = "artifacts"
+DEFAULT_OUT_DIR = "artifacts/noisy"
 DEFAULT_BATCH_SIZE = 25
 DEFAULT_STABILITY_RUNS = 3
 
